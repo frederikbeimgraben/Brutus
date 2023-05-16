@@ -11,8 +11,7 @@ Contains:
 
 # Imports
 from functools import cache
-from typing import Dict, Generator, Iterable, List, TypeVar, SupportsIndex
-
+from typing import Dict, Generator, Iterable, List, TypeVar
 
 # Type Hints  (I just like type hints, okay?)
 S = TypeVar("S")
@@ -22,12 +21,11 @@ T = Iterable[S]
 
 # Constants
 ALPHABET: A = \
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890 !?.\n\t)]}{[(+-*/=<>@#$%^&|~`\\\"';:,_"
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890 !?.\n\r\t)]}{[(+-*/=<>@#$%^&|~`\\\"';:,_"
 
 
 # Functions
 ## Invert the Alphabet Table
-@cache
 def invert_table(table: A=ALPHABET) -> A:
     """
     Inverts an alphabet table.
@@ -56,13 +54,14 @@ def hash_sequence(text: T, table: A=ALPHABET) -> int:
     Returns:
         int: The hashed offset value.
     """
-
-    INVERTED_TABLE: Dict[S, int] = invert_table(table)
+    
+    inverted: Dict[S, int] = invert_table(table)
 
     return sum(
-        INVERTED_TABLE[symbol]
-        for symbol in text
+        inverted[symbol]
+        for symbol in text if symbol in inverted
     ) % len(table)
+    
 
 def support_hashing(func: callable) -> callable:
     """
@@ -76,10 +75,7 @@ def support_hashing(func: callable) -> callable:
     """
     def wrapper(text: S | T, key: int | T, table: A=ALPHABET) -> int:
         if not isinstance(key, int):
-            try:
-                key = hash_sequence(key, table)
-            except TypeError:
-                raise TypeError("The key must be an integer or a sequence of symbols.")
+            key = hash_sequence(key, table)
 
         return func(text, key, table)
 
@@ -102,7 +98,9 @@ def shift_symbol(symbol: S, shift: int, table: A=ALPHABET) -> S:
     """
 
     if symbol not in table:
-        return symbol
+        if isinstance(symbol, str):
+            symbol = str(symbol.encode("utf-8"))[2:-1]
+        raise ValueError(f"The symbol '{symbol}' is not in the alphabet.")
 
     index: int = table.index(symbol)
 
@@ -128,6 +126,7 @@ def caesar_shift_sequence(text: T, offset: int, table: A=ALPHABET) -> Generator[
         for symbol in text
     )
 
+@support_hashing
 def caesar_encrypt_sequence(text: T, key: int, table: A=ALPHABET) -> Generator[S, None, None]:
     """
     Encrypts a sequence using a Caesar Shift.
@@ -144,6 +143,7 @@ def caesar_encrypt_sequence(text: T, key: int, table: A=ALPHABET) -> Generator[S
 
     return caesar_shift_sequence(text, key, table)
 
+@support_hashing
 def caesar_decrypt_sequence(text: T, key: int, table: A=ALPHABET) -> Generator[S, None, None]:
     """
     Decrypts a sequence using a Caesar Shift.
@@ -219,14 +219,16 @@ def vigenere_shift_sequence(
 
     # Check if the key is as long as the text if assert_len is True
     # Otherwise, we will just wrap around the key
-    assert len(key) == len(text) or not assert_len, \
+    assert not assert_len or len(key) == len(text), \
         "The key must be as long as the text."
     
     return (
         shift_symbol(
             symbol,
             (
-                hash_sequence(key[i % len(key)], table)
+                hash_sequence(skey, table)
+                if not isinstance(skey := key[i % len(key)], int)
+                else skey
                 * (-1 if reverse else 1)
             ),
             table
@@ -313,7 +315,7 @@ REPLACEMENTS = {
     ' ': '␣',
     '\n': '↵',
     '\t': '⇥',
-    '\r': '⇤'
+    '\r': '⇤',
 }
 
 # Prettyfying
@@ -333,7 +335,18 @@ def prettyfy(text: str) -> str:
     )
 
 
-TEST_TEXT = "Hello World!\nThis is a test message.\n\t- 1234567890"
+TEST_TEXT = \
+"""Hello World!
+This is a test message.
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
+et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
+aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse
+cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
+culpa qui officia deserunt mollit anim id est laborum.
+\t- Lorem Ipsum
+
+0123456789()[]{}<>.,;:?!+-*/=\\|&%$#@^~`"'_
+Wrong\rRight"""
 
 
 def test_alg(alg_enc: callable, alg_dec: callable, key: T | int, text: str) -> None:
@@ -349,7 +362,7 @@ def test_alg(alg_enc: callable, alg_dec: callable, key: T | int, text: str) -> N
     enc = alg_enc(text, key)
     dec = alg_dec(enc, key)
 
-    print(f"Encrypting with key {key}:")
+    print(f"Encrypting with key '{key}':")
     print(
 f"""============ Original ============
 {text}
@@ -369,8 +382,7 @@ if __name__ == "__main__":
     # Test Caesar Cipher
     print("Caesar Cipher:")
 
-    # Test encrypting a single character
-    key_num = 17
+    key_num = 13
     key_str = "ThisIsAKey"
 
     test_alg(
