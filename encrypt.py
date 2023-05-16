@@ -6,6 +6,7 @@ Created: 2023/05/16
 
 Contains:
     - Simple Caesar Shift
+    - Vigenere Cipher
 """
 
 # Imports
@@ -107,7 +108,7 @@ def shift_symbol(symbol: S, shift: int, table: A=ALPHABET) -> S:
     return table[(index + shift) % len(table)]
 
 @support_hashing
-def shift_sequence(text: T, offset: int, table: A=ALPHABET) -> Generator[S, None, None]:
+def caesar_shift_sequence(text: T, offset: int, table: A=ALPHABET) -> Generator[S, None, None]:
     """
     Shifts a Sequence by a given offset value.
 
@@ -125,3 +126,180 @@ def shift_sequence(text: T, offset: int, table: A=ALPHABET) -> Generator[S, None
         shift_symbol(symbol, offset, table)
         for symbol in text
     )
+
+def caesar_encrypt_sequence(text: T, key: int, table: A=ALPHABET) -> Generator[S, None, None]:
+    """
+    Encrypts a sequence using a Caesar Shift.
+
+    Args:
+        text (T): The text to encrypt.
+        key (int): The key to use.
+        table (A, optional): The alphabet to use. Defaults to ALPHABET.
+
+    Returns:
+        Generator[S, None, None]: The encrypted text.
+            We use a generator here to allow for lazy evaluation of eg. a stream of characters.
+    """
+
+    return caesar_shift_sequence(text, key, table)
+
+def caesar_decrypt_sequence(text: T, key: int, table: A=ALPHABET) -> Generator[S, None, None]:
+    """
+    Decrypts a sequence using a Caesar Shift.
+
+    Args:
+        text (T): The text to decrypt.
+        key (int): The key to use.
+        table (A, optional): The alphabet to use. Defaults to ALPHABET.
+
+    Returns:
+        Generator[S, None, None]: The decrypted text.
+            We use a generator here to allow for lazy evaluation of eg. a stream of characters.
+    """
+
+    return caesar_shift_sequence(text, -key, table)
+
+@support_hashing
+def caesar_encrypt_str(text: str, key: int, table: A=ALPHABET) -> str:
+    """
+    Encrypts a text using a Caesar Shift.
+
+    Args:
+        text (T): The text to encrypt.
+        key (int): The key to use.
+        table (A, optional): The alphabet to use. Defaults to ALPHABET.
+
+    Returns:
+        str: The encrypted text.
+    """
+
+    return "".join(
+        caesar_encrypt_sequence(text, key, table)
+    )
+
+@support_hashing
+def caesar_decrypt_str(text: str, key: int, table: A=ALPHABET) -> str:
+    """
+    Decrypts a text using a Caesar Shift.
+
+    Args:
+        text (T): The text to decrypt.
+        key (int): The key to use.
+        table (A, optional): The alphabet to use. Defaults to ALPHABET.
+
+    Returns:
+        str: The decrypted text.
+    """
+
+    return "".join(
+        caesar_decrypt_sequence(text, key, table)
+    )
+
+### Vigenere Cipher
+def vigenere_shift_sequence(
+        text: T,
+        key: T,
+        reverse: bool=False,
+        table: A=ALPHABET,
+        assert_len=False) -> Generator[S, None, None]:
+    """
+    Shifts a sequence by a given key.
+
+    Args:
+        text (T): The text to shift.
+        key (T): The key to use.
+        table (A, optional): The alphabet to use. Defaults to ALPHABET.
+
+    Returns:
+        Generator[S, None, None]: The shifted text.
+            We use a generator here to allow for lazy evaluation of eg. a stream of characters.
+    """
+
+    # Check if the key is as long as the text if assert_len is True
+    # Otherwise, we will just wrap around the key
+    assert len(key) == len(T) or not assert_len, \
+        "The key must be as long as the text."
+    
+    return (
+        shift_symbol(
+            symbol,
+            key[i % len(key)] if not reverse else -key[i % len(key)], 
+            table
+        ) for i, symbol in enumerate(text)
+    )
+
+def vigenere_encrypt_sequence(text: T, key: T, table: A=ALPHABET) -> Generator[S, None, None]:
+    """
+    Shifts a sequence by a given key.
+
+    Args:
+        text (T): The text to shift.
+        key (T): The key to use.
+        table (A, optional): The alphabet to use. Defaults to ALPHABET.
+
+    Returns:
+        Generator[S, None, None]: The shifted text.
+            We use a generator here to allow for lazy evaluation of eg. a stream of characters.
+    """
+
+    return vigenere_shift_sequence(
+        text=text,
+        key=key,
+        table=table
+    )
+
+def vigenere_decrypt_sequence(text: T, key: T, table: A=ALPHABET) -> Generator[S, None, None]:
+    """
+    Shifts a sequence by a given key.
+
+    Args:
+        text (T): The text to shift.
+        key (T): The key to use.
+        table (A, optional): The alphabet to use. Defaults to ALPHABET.
+
+    Returns:
+        Generator[S, None, None]: The shifted text.
+            We use a generator here to allow for lazy evaluation of eg. a stream of characters.
+    """
+
+    return vigenere_shift_sequence(
+        text=text,
+        key=key,
+        reverse=True,
+        table=table
+    )
+
+def vigenere_encrypt_str(text: str, key: str, table: A=ALPHABET) -> str:
+    """
+    Encrypts a text using a Vigenere Cipher.
+
+    Args:
+        text (T): The text to encrypt.
+        key (T): The key to use.
+        table (A, optional): The alphabet to use. Defaults to ALPHABET.
+
+    Returns:
+        str: The encrypted text.
+    """
+
+    return "".join(
+        vigenere_encrypt_sequence(text, key, table)
+    )
+
+def vigenere_decrypt_str(text: str, key: str, table: A=ALPHABET) -> str:
+    """
+    Decrypts a text using a Vigenere Cipher.
+
+    Args:
+        text (T): The text to decrypt.
+        key (T): The key to use.
+        table (A, optional): The alphabet to use. Defaults to ALPHABET.
+
+    Returns:
+        str: The decrypted text.
+    """
+
+    return "".join(
+        vigenere_decrypt_sequence(text, key, table)
+    )
+
