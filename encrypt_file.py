@@ -1,6 +1,29 @@
 #!/usr/bin/env python3
 """
 Encrypts a file using the local "encrypt.py" library.
+
+Author: Frederik Beimgraben (github/frederikbeimgraben)
+Created: 2023-05-16
+
+Usage:
+    encrypt_file.py -i <input> -o <output> -k <key> [-f <function>] [-d]
+    encrypt_file.py -h | --help
+
+Options:
+    -i, --input
+        The path to the input file.
+    -o, --output
+        The path to the output file.
+    -k, --key
+        The key to use for encryption.
+    -f, --function
+        Default: caesar
+        Options: caesar, vigenere
+        The encryption function to use.
+    -d, --decrypt
+        Decrypts the input file instead of encrypting it.
+    -h, --help
+        Show help.
 """
 
 # Standard imports

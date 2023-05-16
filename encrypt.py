@@ -1,16 +1,16 @@
+#!/usr/bin/env python3
 """
 Encryption Algorithms for the project
 
 Author:  Frederik Beimgraben (github/frederikbeimgraben)
-Created: 2023/05/16
+Created: 2023-05-16
 
 Contains:
     - Simple Caesar Shift
     - Vigenere Cipher
 """
 
-# Imports
-from functools import cache
+# Standard imports
 from typing import Dict, Generator, Iterable, List, TypeVar
 
 # Type Hints  (I just like type hints, okay?)
