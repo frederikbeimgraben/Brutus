@@ -22,7 +22,7 @@ T = Iterable[S]
 
 # Constants
 ALPHABET: A = \
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890 !?."
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890 !?.\n\t)]}{[(+-*/=<>@#$%^&|~`\\\"';:,_"
 
 
 # Functions
@@ -100,10 +100,11 @@ def shift_symbol(symbol: S, shift: int, table: A=ALPHABET) -> S:
     Returns:
         S: The shifted symbol.
     """
-    if symbol not in table.values():
+
+    if symbol not in table:
         return symbol
 
-    index: int = table.invert[symbol]
+    index: int = table.index(symbol)
 
     return table[(index + shift) % len(table)]
 
@@ -195,6 +196,7 @@ def caesar_decrypt_str(text: str, key: int, table: A=ALPHABET) -> str:
         caesar_decrypt_sequence(text, key, table)
     )
 
+
 ### Vigenere Cipher
 def vigenere_shift_sequence(
         text: T,
@@ -217,13 +219,16 @@ def vigenere_shift_sequence(
 
     # Check if the key is as long as the text if assert_len is True
     # Otherwise, we will just wrap around the key
-    assert len(key) == len(T) or not assert_len, \
+    assert len(key) == len(text) or not assert_len, \
         "The key must be as long as the text."
     
     return (
         shift_symbol(
             symbol,
-            key[i % len(key)] if not reverse else -key[i % len(key)], 
+            (
+                hash_sequence(key[i % len(key)], table)
+                * (-1 if reverse else 1)
+            ),
             table
         ) for i, symbol in enumerate(text)
     )
@@ -303,3 +308,83 @@ def vigenere_decrypt_str(text: str, key: str, table: A=ALPHABET) -> str:
         vigenere_decrypt_sequence(text, key, table)
     )
 
+
+REPLACEMENTS = {
+    ' ': '␣',
+    '\n': '↵',
+    '\t': '⇥',
+    '\r': '⇤'
+}
+
+# Prettyfying
+def prettyfy(text: str) -> str:
+    """
+    Prettyfies a text.
+
+    Args:
+        text (str): The text to prettyfy.
+
+    Returns:
+        str: The prettyfied text.
+    """
+
+    return ''.join(
+        REPLACEMENTS.get(char, char) for char in text
+    )
+
+
+TEST_TEXT = "Hello World!\nThis is a test message.\n\t- 1234567890"
+
+
+def test_alg(alg_enc: callable, alg_dec: callable, key: T | int, text: str) -> None:
+    """
+    Tests an algorithm.
+
+    Args:
+        alg (callable): The algorithm to test.
+        key (T | int): The key to use.
+        text (str): The text to encrypt.
+    """
+
+    enc = alg_enc(text, key)
+    dec = alg_dec(enc, key)
+
+    print(f"Encrypting with key {key}:")
+    print(
+f"""============ Original ============
+{text}
+============ Escaped =============
+{prettyfy(text)}
+=========== Encrypted ============
+{prettyfy(enc)}
+======= Decrypted Escaped ========
+{prettyfy(dec)}
+=========== Decrypted ============
+{dec}
+==================================
+""")
+
+# Main
+if __name__ == "__main__":
+    # Test Caesar Cipher
+    print("Caesar Cipher:")
+
+    # Test encrypting a single character
+    key_num = 17
+    key_str = "ThisIsAKey"
+
+    test_alg(
+        alg_enc=caesar_encrypt_str,
+        alg_dec=caesar_decrypt_str,
+        key=key_num,
+        text=TEST_TEXT
+    )
+
+    # Test Vigenere Cipher
+    print("Vigenere Cipher:")
+    test_alg(
+        alg_enc=vigenere_encrypt_str,
+        alg_dec=vigenere_decrypt_str,
+        key=key_str,
+        text=TEST_TEXT
+    )
