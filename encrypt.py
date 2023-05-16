@@ -78,6 +78,10 @@ def support_hashing(func: callable) -> callable:
             key = hash_sequence(key, table)
 
         return func(text, key, table)
+    
+    wrapper.__name__ = func.__name__
+    wrapper.__doc__ = func.__doc__
+    wrapper.__annotations__ = func.__annotations__
 
     return wrapper
 
@@ -226,9 +230,11 @@ def vigenere_shift_sequence(
         shift_symbol(
             symbol,
             (
-                hash_sequence(skey, table)
-                if not isinstance(skey := key[i % len(key)], int)
-                else skey
+                (
+                    hash_sequence(skey, table)
+                    if not isinstance(skey := key[i % len(key)], int)
+                    else skey
+                )
                 * (-1 if reverse else 1)
             ),
             table
@@ -361,26 +367,32 @@ def test_alg(alg_enc: callable, alg_dec: callable, key: T | int, text: str) -> N
 
     enc = alg_enc(text, key)
     dec = alg_dec(enc, key)
+    
+    key_str: str = f"'{key}'" if isinstance(key, str) else str(key)
 
-    print(f"Encrypting with key '{key}':")
+    print(f"\x1B[32;1mUsing: \x1B[0;1m{alg_enc.__name__}(\x1B[0m...\x1B[1m, \x1B[0m{key_str}\x1B[1m)\x1B[0m")
+
+    text_esc = text.replace('\r', '\\r')
+    dec_esc = dec.replace('\r', '\\r')
+
     print(
-f"""============ Original ============
-{text}
-============ Escaped =============
+f"""\x1B[32m==============\x1B[1mORIGINAL\x1B[0;32m=============\x1B[0m
+{text_esc}
+\x1B[32m==============\x1B[1mESCAPED\x1B[0;32m==============\x1B[0m
 {prettyfy(text)}
-=========== Encrypted ============
+\x1B[32m==============\x1B[1mENCRYPTED\x1B[0;32m============\x1B[0m
 {prettyfy(enc)}
-======= Decrypted Escaped ========
+\x1B[32m=========\x1B[1mDECRYPTED ESCAPED\x1B[0;32m=========\x1B[0m
 {prettyfy(dec)}
-=========== Decrypted ============
-{dec}
-==================================
+\x1B[32m=============\x1B[1mDECRYPTED\x1B[0;32m=============\x1B[0m
+{dec_esc}
+\x1B[32m====================================\x1B[0m
 """)
 
 # Main
 if __name__ == "__main__":
     # Test Caesar Cipher
-    print("Caesar Cipher:")
+    print("\x1B[32;1mCaesar Cipher:\x1B[0m")
 
     key_num = 13
     key_str = "ThisIsAKey"
@@ -393,7 +405,7 @@ if __name__ == "__main__":
     )
 
     # Test Vigenere Cipher
-    print("Vigenere Cipher:")
+    print("\x1B[32;1mVigenere Cipher:\x1B[0m")
     test_alg(
         alg_enc=vigenere_encrypt_str,
         alg_dec=vigenere_decrypt_str,

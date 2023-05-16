@@ -218,6 +218,11 @@ def async_map(
                 except StopIteration:
                     # If `wait` is not set, break
                     if queue.empty() and not wait:
+                        while workers:
+                            yield eval_result(
+                                workers,
+                                queue
+                            )
                         break
                     # Otherwise yield the results and wait for new ones
                     if not queue.empty():

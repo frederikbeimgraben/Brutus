@@ -9,11 +9,12 @@ Use typical frequency analysis to break the caesar cipher.
 """
 
 # Standard imports
-from typing import Dict, Generator, List
+from typing import Dict, Generator, List, Tuple
 import json
 
 # Local imports
 from encrypt import caesar_decrypt_str, caesar_encrypt_str, TEST_TEXT, prettyfy
+from parallel_stream import async_map
 
 LANGUAGE = "en"
 
@@ -94,7 +95,7 @@ def get_words(language: str) -> List[str]:
         dictionary = json.load(file)
 
     return [
-        word.replace("a ", "")
+        word.replace("a ", "").lower()
         for word in dictionary
     ]
 
@@ -204,35 +205,83 @@ def guess_text(
         Generator[str, None, None]: The guessed texts.
     """
 
-    # Find the key producing the most valid words
-    key = max(
-        guess_key(text, language, top),
-        key=lambda key: len([
+    # Load the words
+    words = get_words(language)
+
+    @async_map(
+        max_workers=10,
+        wait=False,
+        timeout=10,
+    )
+    def guess_key_text(
+            key: int) -> Tuple[Tuple[int, int], str]:
+        """
+        Gets the number of valid words for the given key.
+        """
+
+        return len([
             word
             for word in caesar_decrypt_str(text, key).split(" ")
-            if word in get_words(language)
-        ])
+            if word.lower().strip('. !?,') in words
+        ]), key
+
+    # Find the key producing the most valid words
+    guesses = list(
+        guess_key_text(
+            guess_key(
+                text,
+                language,
+                top
+            )
+        )
     )
 
-    # Return the decrypted text
-    return caesar_decrypt_str(text, key)
+    # Sort the guesses
+    sorted_guesses = sorted(
+        guesses,
+        key=lambda item: item[0],
+        reverse=True
+    )
     
 
-KEY = 5
+    # Get the best guess
+    best_guess = sorted_guesses[0]
+
+    # Return the decrypted text
+    return best_guess, caesar_decrypt_str(text, best_guess[1])
+    
+
+KEY = 17
 
 if __name__ == "__main__":
     # Test the guess text function
-    text = TEST_TEXT
+    text = "This is a test."
     language = "en"
-    top = 17
+    top = 10
 
-    print(f"Text: {text}")
-    print(f"Language: {language}")
-    print(f"Top: {top}")
+    print(
+f"""\x1B[32m==============\x1B[1mORIGINAL\x1B[0;32m=============\x1B[0m
+{text}
+\x1B[32m===================================\x1B[0m
+"""
+    )
 
     enc = caesar_encrypt_str(text, KEY)
-    print(f"Encrypted: {prettyfy(enc)}")
-    print(f"Actual Key: {KEY}")
+    print(
+f"""\x1B[32m=============\x1B[1mENCRYPTED\x1B[0;32m=============\x1B[0m
+{prettyfy(enc)}
+\x1B[32m===================================\x1B[0m
+"""
+    )
+    print(f"\x1B[32;1mActual Key:\x1B[0m {KEY}")
 
-    print("Guessing text...")
-    print(f"Decrypted: {guess_text(enc, language, top)}")
+    print("\x1B[32;1mGuessing text...\x1B[0m")
+    (occ, key), guess = guess_text(enc, language, top)
+    print(
+f"""\x1B[32m===============\x1B[1mGUESS\x1B[0;32m===============\x1B[0m
+{guess}
+\x1B[32m===================================\x1B[0m
+"""
+    )
+    print(f"\x1B[32;1mGuess Key:\x1B[0m {key}")
+    print(f"\x1B[32;1mValid Words:\x1B[0m {occ}")
