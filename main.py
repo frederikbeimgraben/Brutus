@@ -78,6 +78,9 @@ class Application():
     # Update counter
     last_text: str = ''
 
+    # Non Readable Flag
+    non_readable: bool = False
+
     # Alphabet
     @property
     def alphabet(self) -> List[int]:
@@ -201,6 +204,9 @@ class Application():
                 )
 
     def update_input(self, enc: bool=True) -> None:
+        if self.non_readable:
+            return
+
         if enc:
             self.text_enc = self.__debeautify_ascii(
                 self.encrypted_text_buffer.get_text(
@@ -420,6 +426,8 @@ class Application():
         # Text (connect to the text view and not the buffer)
         self.decrypted_text_buffer.connect('end_user_action', self.update_text)
         self.encrypted_text_buffer.connect('end_user_action', self.update_text)
+        # Direction
+        self.direction_switch.connect('state-set', self.update_direction)
 
     def link_detect_actions(self) -> None:
         # Alphabet
@@ -431,6 +439,7 @@ class Application():
         # Copy
         self.copy_dec_button.connect('clicked', self.copy_dec)
         self.copy_enc_button.connect('clicked', self.copy_enc)
+        self.clear_dec_button.connect('clicked', self.clear_dec)
 
     def copy_dec(self, button: Gtk.Button) -> None:
         self.copy(self.decrypted_text_buffer)
@@ -451,6 +460,14 @@ class Application():
 
         # Set the clipboard text
         clipboard.set_text(text, -1)
+
+    def clear_dec(self, button: Gtk.Button) -> None:
+        self.data_dec = b''
+        self.hex_dec = ''
+        self.text_dec = ''
+        self.decrypted_text_buffer.set_text('')
+        self.apply_algorithm(self.algorithm, self.alphabet, self.key)
+        self.update_text_views()
 
     def detect_alphabet(self, button: Gtk.Button) -> None:
         if self.algorithm != 'caesar':
@@ -496,6 +513,9 @@ class Application():
         # Update the view
         self.update_text_views()
 
+    def update_direction(self, switch: Gtk.Switch, state: bool) -> None:
+        self.update_text_views()
+
     def update_text_views(self) -> None:
         self.update_view(not self.dec, False)
         self.update_view(not self.dec, True)
@@ -508,6 +528,30 @@ class Application():
         # Make the cursor visible in the active text view and invisible in the non active
         self.decrypted_text_view.set_cursor_visible(not self.dec)
         self.encrypted_text_view.set_cursor_visible(self.dec)
+
+        # Update the readable text
+        self.update_readable_text()
+
+    def update_readable_text(self) -> None:
+        # Get the text for the active text view
+        text = self.text_enc if self.dec else self.text_dec
+
+        target = self.decrypted_text_view if not self.dec else self.encrypted_text_view
+
+        # Check if the text is printable/readable
+        if any(
+            char not in string.printable
+            for char in text
+        ):
+            # Make the text view non editable and cursor invisible
+            target.set_editable(False)
+            target.set_cursor_visible(False)
+            self.non_readable = True
+        else:
+            # Make the text view editable and cursor visible
+            target.set_editable(True)
+            target.set_cursor_visible(True)
+            self.non_readable = False
 
     def update_algorithm(self, combo: Gtk.ComboBox) -> None:
         # Apply the algorithm
@@ -658,10 +702,12 @@ class Application():
         ## Copy Buttons
         self.copy_dec_button = self.builder.get_object('copy_dec_button')
         self.copy_enc_button = self.builder.get_object('copy_enc_button')
+        self.clear_dec_button = self.builder.get_object('clear_dec_button')
 
         assert None not in [
             self.copy_dec_button,
-            self.copy_enc_button
+            self.copy_enc_button,
+            self.clear_dec_button
         ], 'Failed to get the copy buttons'
 
     def show(self) -> None:
