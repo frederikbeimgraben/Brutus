@@ -717,10 +717,16 @@ if __name__ == '__main__':
     # Disable header bar warning
     Gtk.Settings.get_default().set_property('gtk-decoration-layout', 'menu:close')
 
+    app: Application
+
     # Test if run' from pyinstaller one-file bundle
     if getattr(sys, 'frozen', False):
         # Change working directory to the bundle resource path
         os.chdir(sys._MEIPASS)
+    else:
+        # Get file directory
+        os.chdir(os.path.dirname(os.path.realpath(__file__)))
+        os.chdir('..')
 
     app = Application('ui/main.ui')
 
