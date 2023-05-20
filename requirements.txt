@@ -1,3 +1,4 @@
 PyGObject
 typing
 functools
+pyperclip

@@ -9,6 +9,7 @@ print('\x1B[35mImporting...\x1B[0m', end='')
 
 # Standard library imports
 import os
+import string
 from typing import Any, List
 import subprocess
 
@@ -30,7 +31,7 @@ sys.path.append(site_packages)
 
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+from gi.repository import Gtk, Gdk, GObject
 
 # Local imports
 from encrypt import caesar_encrypt_sequence, caesar_decrypt_sequence
@@ -59,44 +60,6 @@ ALGORITHMS = {
     '0': 'caesar',
     '1': 'vigenere'
 }
-
-BEAUTIFY_REPLACE = {
-    '\x00': '␀',
-    '\x01': '␁',
-    '\x02': '␂',
-    '\x03': '␃',
-    '\x04': '␄',
-    '\x05': '␅',
-    '\x06': '␆',
-    '\x07': '␇',
-    '\x08': '␈',
-    '\x09': '␉',
-    '\x0A': '␊',
-    '\x0B': '␋',
-    '\x0C': '␌',
-    '\x0D': '␍',
-    '\x0E': '␎',
-    '\x0F': '␏',
-    '\x10': '␐',
-    '\x11': '␑',
-    '\x12': '␒',
-    '\x13': '␓',
-    '\x14': '␔',
-    '\x15': '␕',
-    '\x16': '␖',
-    '\x17': '␗',
-    '\x18': '␘',
-    '\x19': '␙',
-    '\x1A': '␚',
-    '\x1B': '␛',
-    '\x1C': '␜',
-    '\x1D': '␝',
-    '\x1E': '␞',
-    '\x1F': '␟',
-    '\x7F': '␡',
-}
-
-DEBEAUTIFY = {v: k for k, v in BEAUTIFY_REPLACE.items()}
 
 # GUI
 ## Main window
@@ -171,6 +134,7 @@ class Application():
         self.link_file_actions()
         self.link_algorithm_actions()
         self.link_detect_actions()
+        self.link_copy_actions()
 
         print('\t\x1B[32;1mDone\x1B[0m')
 
@@ -343,6 +307,12 @@ class Application():
 
             if file_path is None:
                 return
+            
+            # If the file is a directory
+            if os.path.isdir(file_path):
+                # Switch to the directory
+                dialog.set_current_folder(file_path)
+                return
 
             # Load the file
             self.load_file(file_path, enc=is_encrypted)
@@ -368,8 +338,44 @@ class Application():
             # Get state of combo 'is encrypted'
             is_encrypted = self.save_is_encrypted_combo.get_active_id() != 0
 
-            if file_path is None:
+            # If None or file_name_entry is set
+            if file_path is None or self.file_name_entry.get_text() != '':
+                # Get the directory path
+                file_path = dialog.get_current_folder()
+
+                if file_path is None:
+                    return
+
+                # Get Content of `file_name_entry`
+                file_name = self.file_name_entry.get_text()
+
+                if file_name == '':
+                    return
+
+                # Create the file path
+                file_path = os.path.join(file_path, file_name)
+
+            # If the path is a directory
+            if os.path.isdir(file_path):
+                # Switch to the directory
+                dialog.set_current_folder(file_path)
                 return
+
+            # If the file already exists
+            if os.path.exists(file_path):
+                # Ask the user if he wants to overwrite the file
+                ask_dialog = Gtk.MessageDialog(
+                    None,
+                    modal=True,
+                    message_type=Gtk.MessageType.QUESTION,
+                    buttons=Gtk.ButtonsType.YES_NO,
+                    text=f'File {file_path} already exists. Do you want to overwrite it?'
+                )
+                response = ask_dialog.run()
+                ask_dialog.destroy()
+
+                if response == Gtk.ResponseType.NO:
+                    return
 
             # Save the file
             self.save_file(file_path, enc=is_encrypted)
@@ -421,6 +427,31 @@ class Application():
         # Key
         self.key_detect_button.connect('clicked', self.detect_key)
 
+    def link_copy_actions(self) -> None:
+        # Copy
+        self.copy_dec_button.connect('clicked', self.copy_dec)
+        self.copy_enc_button.connect('clicked', self.copy_enc)
+
+    def copy_dec(self, button: Gtk.Button) -> None:
+        self.copy(self.decrypted_text_buffer)
+
+    def copy_enc(self, button: Gtk.Button) -> None:
+        self.copy(self.encrypted_text_buffer)
+
+    def copy(self, buffer: Gtk.TextBuffer) -> None:
+        # Get the clipboard
+        clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+
+        # Get the text
+        text = buffer.get_text(
+            buffer.get_start_iter(),
+            buffer.get_end_iter(),
+            True
+        )
+
+        # Set the clipboard text
+        clipboard.set_text(text, -1)
+
     def detect_alphabet(self, button: Gtk.Button) -> None:
         if self.algorithm != 'caesar':
             return
@@ -470,6 +501,14 @@ class Application():
         self.update_view(not self.dec, True)
         self.update_view(self.dec, True)
 
+        # Set non active text view to non editable and active to editable
+        self.decrypted_text_view.set_editable(not self.dec)
+        self.encrypted_text_view.set_editable(self.dec)
+
+        # Make the cursor visible in the active text view and invisible in the non active
+        self.decrypted_text_view.set_cursor_visible(not self.dec)
+        self.encrypted_text_view.set_cursor_visible(self.dec)
+
     def update_algorithm(self, combo: Gtk.ComboBox) -> None:
         # Apply the algorithm
         self.apply_algorithm(self.algorithm, self.alphabet, self.key)
@@ -508,16 +547,19 @@ class Application():
         self.update_text_views()
 
     def __beautify_ascii(self, text: str) -> str:
-        return ''.join(
-            BEAUTIFY_REPLACE.get(c, c)
+        # Check if there are non-readable characters
+        if any(
+            c not in string.printable
             for c in text
-        )
+        ):
+            return 'Non-readable characters\nLook at the hex view'
+        
+        # Return the text
+        return text
     
     def __debeautify_ascii(self, text: str) -> str:
-        return ''.join(
-            DEBEAUTIFY.get(c, c)
-            for c in text
-        )
+        # Return the text
+        return text
 
     def get_objects(self) -> None:
         # Get the objects
@@ -578,8 +620,6 @@ class Application():
         #### Mode Selection
         self.open_is_encrypted_combo = self.builder.get_object('open_is_encrypted_combo')
         self.open_is_encrypted_entry = self.builder.get_object('open_is_encrypted_entry')
-        self.open_format_combo = self.builder.get_object('open_format_combo')
-        self.open_format_entry = self.builder.get_object('open_format_entry')
         #### Actions
         self.open_file_selector_action = self.builder.get_object('open_file_save_action')
         #### Buttons
@@ -591,8 +631,8 @@ class Application():
         #### Mode Selection
         self.save_is_encrypted_combo = self.builder.get_object('save_is_encrypted_combo')
         self.save_is_encrypted_entry = self.builder.get_object('save_is_encrypted_entry')
-        self.save_format_combo = self.builder.get_object('save_format_combo')
-        self.save_format_entry = self.builder.get_object('save_format_entry')
+        ### File Name Entry
+        self.file_name_entry = self.builder.get_object('file_name_entry')
         #### Actions
         self.open_file_save_action = self.builder.get_object('open_file_save_action')
         #### Buttons
@@ -604,19 +644,25 @@ class Application():
             self.open_file_dialog,
             self.open_is_encrypted_combo,
             self.open_is_encrypted_entry,
-            self.open_format_combo,
-            self.open_format_entry,
             self.open_file_selector_action,
             self.open_ok_button,
             self.save_file_button,
             self.save_file_dialog,
             self.save_is_encrypted_combo,
             self.save_is_encrypted_entry,
-            self.save_format_combo,
-            self.save_format_entry,
             self.open_file_save_action,
             self.save_ok_button,
+            self.file_name_entry
         ], 'Failed to get the file controls'
+
+        ## Copy Buttons
+        self.copy_dec_button = self.builder.get_object('copy_dec_button')
+        self.copy_enc_button = self.builder.get_object('copy_enc_button')
+
+        assert None not in [
+            self.copy_dec_button,
+            self.copy_enc_button
+        ], 'Failed to get the copy buttons'
 
     def show(self) -> None:
         self.main_window.show_all()

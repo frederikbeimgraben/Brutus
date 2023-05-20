@@ -2,7 +2,7 @@
 <!-- Generated with glade 3.40.0 -->
 <interface>
   <requires lib="gtk+" version="3.24"/>
-  <object class="GtkAdjustment" id="adjustment_enc">
+  <object class="GtkAdjustment" id="adjustment_hex">
     <property name="upper">100</property>
     <property name="step-increment">1</property>
     <property name="page-increment">10</property>
@@ -96,34 +96,9 @@
                     </child>
                   </object>
                   <packing>
-                    <property name="expand">True</property>
+                    <property name="expand">False</property>
                     <property name="fill">True</property>
                     <property name="position">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkComboBoxText" id="open_format_combo">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="active">0</property>
-                    <property name="has-entry">True</property>
-                    <property name="active-id">0</property>
-                    <items>
-                      <item id="0" translatable="yes">ASCII</item>
-                      <item id="1" translatable="yes">Bytes</item>
-                    </items>
-                    <child internal-child="entry">
-                      <object class="GtkEntry" id="open_format_entry">
-                        <property name="can-focus">False</property>
-                        <property name="editable">False</property>
-                        <property name="placeholder-text" translatable="yes">ASCII/Bytes</property>
-                      </object>
-                    </child>
-                  </object>
-                  <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
-                    <property name="position">1</property>
                   </packing>
                 </child>
               </object>
@@ -234,29 +209,17 @@
                     </child>
                   </object>
                   <packing>
-                    <property name="expand">True</property>
+                    <property name="expand">False</property>
                     <property name="fill">True</property>
                     <property name="position">0</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkComboBoxText" id="save_format_combo">
+                  <object class="GtkEntry" id="file_name_entry">
                     <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="active">0</property>
-                    <property name="has-entry">True</property>
-                    <property name="active-id">0</property>
-                    <items>
-                      <item id="0" translatable="yes">ASCII</item>
-                      <item id="1" translatable="yes">Bytes</item>
-                    </items>
-                    <child internal-child="entry">
-                      <object class="GtkEntry" id="save_format_entry">
-                        <property name="can-focus">True</property>
-                        <property name="editable">False</property>
-                        <property name="placeholder-text" translatable="yes">ASCII/Bytes</property>
-                      </object>
-                    </child>
+                    <property name="can-focus">True</property>
+                    <property name="placeholder-text" translatable="yes">Name</property>
+                    <property name="input-hints">GTK_INPUT_HINT_NO_SPELLCHECK | GTK_INPUT_HINT_NO_EMOJI | GTK_INPUT_HINT_NONE</property>
                   </object>
                   <packing>
                     <property name="expand">True</property>
@@ -338,26 +301,39 @@ Sapien faucibus et molestie ac feugiat. In nulla posuere sollicitudin aliquam ul
                         <property name="left-padding">5</property>
                         <property name="right-padding">5</property>
                         <child>
-                          <object class="GtkScrolledWindow">
+                          <object class="GtkBox">
                             <property name="visible">True</property>
-                            <property name="can-focus">True</property>
-                            <property name="window-placement-set">False</property>
-                            <property name="shadow-type">in</property>
+                            <property name="can-focus">False</property>
+                            <property name="orientation">vertical</property>
                             <child>
-                              <object class="GtkTextView" id="hex_dec_box">
+                              <object class="GtkScrolledWindow">
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
-                                <property name="pixels-above-lines">5</property>
-                                <property name="pixels-below-lines">5</property>
-                                <property name="editable">False</property>
-                                <property name="wrap-mode">word</property>
-                                <property name="left-margin">10</property>
-                                <property name="right-margin">10</property>
-                                <property name="cursor-visible">False</property>
-                                <property name="buffer">hex_dec</property>
-                                <property name="accepts-tab">False</property>
-                                <property name="monospace">True</property>
+                                <property name="vadjustment">adjustment_hex</property>
+                                <property name="window-placement-set">False</property>
+                                <property name="shadow-type">in</property>
+                                <child>
+                                  <object class="GtkTextView" id="hex_dec_box">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="pixels-above-lines">5</property>
+                                    <property name="pixels-below-lines">5</property>
+                                    <property name="editable">False</property>
+                                    <property name="wrap-mode">word</property>
+                                    <property name="left-margin">10</property>
+                                    <property name="right-margin">10</property>
+                                    <property name="cursor-visible">False</property>
+                                    <property name="buffer">hex_dec</property>
+                                    <property name="accepts-tab">False</property>
+                                    <property name="monospace">True</property>
+                                  </object>
+                                </child>
                               </object>
+                              <packing>
+                                <property name="expand">True</property>
+                                <property name="fill">True</property>
+                                <property name="position">1</property>
+                              </packing>
                             </child>
                           </object>
                         </child>
@@ -436,7 +412,7 @@ Sapien faucibus et molestie ac feugiat. In nulla posuere sollicitudin aliquam ul
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkButton">
+                      <object class="GtkButton" id="copy_dec_button">
                         <property name="visible">True</property>
                         <property name="can-focus">True</property>
                         <property name="receives-default">True</property>
@@ -628,7 +604,8 @@ Sapien faucibus et molestie ac feugiat. In nulla posuere sollicitudin aliquam ul
                               <item id="2" translatable="yes">Uppercase</item>
                               <item id="3" translatable="yes">Letters only</item>
                               <item id="4" translatable="yes">Letters and Numbers</item>
-                              <item id="5" translatable="yes">Custom</item>
+                              <item id="5" translatable="yes">Letters, Numbers and Punctuation</item>
+                              <item id="6" translatable="yes">Custom</item>
                             </items>
                             <child internal-child="entry">
                               <object class="GtkEntry" id="alphabet_entry">
@@ -790,7 +767,7 @@ Sapien faucibus et molestie ac feugiat. In nulla posuere sollicitudin aliquam ul
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkButton">
+                      <object class="GtkButton" id="copy_enc_button">
                         <property name="visible">True</property>
                         <property name="can-focus">True</property>
                         <property name="receives-default">True</property>
@@ -833,26 +810,39 @@ Sapien faucibus et molestie ac feugiat. In nulla posuere sollicitudin aliquam ul
                         <property name="left-padding">5</property>
                         <property name="right-padding">5</property>
                         <child>
-                          <object class="GtkScrolledWindow">
+                          <object class="GtkBox">
                             <property name="visible">True</property>
-                            <property name="can-focus">True</property>
-                            <property name="window-placement-set">False</property>
-                            <property name="shadow-type">in</property>
+                            <property name="can-focus">False</property>
+                            <property name="orientation">vertical</property>
                             <child>
-                              <object class="GtkTextView" id="hex_enc_box">
+                              <object class="GtkScrolledWindow">
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
-                                <property name="pixels-above-lines">5</property>
-                                <property name="pixels-below-lines">5</property>
-                                <property name="editable">False</property>
-                                <property name="wrap-mode">word</property>
-                                <property name="left-margin">10</property>
-                                <property name="right-margin">10</property>
-                                <property name="cursor-visible">False</property>
-                                <property name="buffer">hex_enc</property>
-                                <property name="accepts-tab">False</property>
-                                <property name="monospace">True</property>
+                                <property name="vadjustment">adjustment_hex</property>
+                                <property name="window-placement-set">False</property>
+                                <property name="shadow-type">in</property>
+                                <child>
+                                  <object class="GtkTextView" id="hex_enc_box">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="pixels-above-lines">5</property>
+                                    <property name="pixels-below-lines">5</property>
+                                    <property name="editable">False</property>
+                                    <property name="wrap-mode">word</property>
+                                    <property name="left-margin">10</property>
+                                    <property name="right-margin">10</property>
+                                    <property name="cursor-visible">False</property>
+                                    <property name="buffer">hex_enc</property>
+                                    <property name="accepts-tab">False</property>
+                                    <property name="monospace">True</property>
+                                  </object>
+                                </child>
                               </object>
+                              <packing>
+                                <property name="expand">True</property>
+                                <property name="fill">True</property>
+                                <property name="position">1</property>
+                              </packing>
                             </child>
                           </object>
                         </child>
