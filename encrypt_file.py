@@ -27,9 +27,7 @@ Options:
 """
 
 # Standard imports
-import sys
-import os
-from typing import Iterable
+from typing import Iterable, Callable
 import argparse
 
 # Local imports
@@ -42,7 +40,7 @@ BYTE_ALPHABET = [
 ]
 
 def apply_byte_stream(
-        func: callable,
+        func: Callable,
         key: Iterable[int],
         byte_stream: Iterable[bytes]) -> Iterable[bytes]:
     """

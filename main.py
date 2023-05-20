@@ -5,21 +5,39 @@ Graphical User Interface for the application using gi.repository: Gtk+
 Use the `ui/main_window.ui` as the UI source file.
 """
 
+print('\x1B[35mImporting...\x1B[0m', end='')
+
 # Standard library imports
 import os
-import sys
 from typing import Any, List
+import subprocess
 
-# Third party imports
+# Get python path site-packages
+command = 'python3 -c "import site; print(site.getsitepackages()[0])"'
+site_packages = subprocess.check_output(command, shell=True).decode('utf-8').strip()
+
+# ls the site-packages directory
+command = f'ls {site_packages}'
+site_packages_ls = subprocess.check_output(command, shell=True).decode('utf-8').strip()
+
+# Check if gi is installed
+if 'gi' not in site_packages_ls:
+    raise ImportError('gi.repository is not installed')
+
+# Load gi, set the version (3.0) and import Gtk
+import sys
+sys.path.append(site_packages)
+
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gio, Gdk, GLib # type: ignore
+from gi.repository import Gtk
 
 # Local imports
-from encrypt import caesar_encrypt_sequence, caesar_decrypt_sequence, S, T, A
+from encrypt import caesar_encrypt_sequence, caesar_decrypt_sequence
 from encrypt import vigenere_encrypt_sequence, vigenere_decrypt_sequence
-from break_lib import caesar_break, caesar_guess_alphabet, caesar_guess_shift
-from encrypt_file import apply_file
+from break_lib import caesar_guess_alphabet, caesar_guess_shift
+
+print('\t\x1B[32;1mDone\x1B[0m')
 
 # Constants
 BYTE_ALPHABET = [
@@ -29,10 +47,10 @@ BYTE_ALPHABET = [
 # BYTES, lower, upper, letters, letters and numbers, None
 ALPHABETS = {
     '0': BYTE_ALPHABET,
-    '1': list(range(97, 123)),
-    '2': list(range(65, 91)),
-    '3': list(range(97, 123)) + list(range(65, 91)),
-    '4': list(range(97, 123)) + list(range(65, 91)) + list(range(48, 58)),
+    '1': list(range(97, 123)) + [32],
+    '2': list(range(65, 91)) + [32],
+    '3': list(range(97, 123)) + list(range(65, 91)) + [32],
+    '4': list(range(97, 123)) + list(range(65, 91)) + list(range(48, 58)) + [32],
     '5': list(range(97, 123)) + list(range(65, 91)) + list(range(48, 58)) + list(range(32, 48)),
     '6': None
 }
@@ -129,29 +147,42 @@ class Application():
 
     def __init__(self, file: str, main_obj: str='main_window') -> None:
         self.builder = Gtk.Builder()
+
+        print('\x1B[35mLoading UI...\x1B[0m', end='', flush=True)
+
         self.builder.add_from_file(file)
 
         self.main_window = self.builder.get_object(main_obj)
+
+        print('\t\x1B[32;1mDone\x1B[0m')
 
         try:
             self.get_objects()
         except AssertionError as e:
             print(e)
-            sys.exit(1)
+            exit(1)
 
         # Set data based on default values
         self.update_input()
         self.update_input(False)
 
+        print('\x1B[35mLinking...\x1B[0m', end='', flush=True)
+
         self.link_file_actions()
         self.link_algorithm_actions()
         self.link_detect_actions()
+
+        print('\t\x1B[32;1mDone\x1B[0m')
 
         self.apply_algorithm('caesar', BYTE_ALPHABET, '0')
 
         self.update_text_views()
 
+        # Link close button to quit
+        self.main_window.connect('delete-event', Gtk.main_quit)
+
     def load_file(self, file_path: str, enc: bool=True) -> None:
+        print(f'Loading file {file_path}...', end='', flush=True)
         with open(file_path, 'rb') as f:
             data: bytes = f.read()
 
@@ -171,7 +202,10 @@ class Application():
             self.data_dec = data
             self.hex_dec = hex
 
+        print('\t\x1B[32;1mDone\x1B[0m')
+
     def save_file(self, file_path: str, enc: bool=True) -> None:
+        print(f'Saving file {file_path}...', end='', flush=True)
         if enc:
             data: bytes = self.data_enc
         else:
@@ -180,7 +214,7 @@ class Application():
         with open(file_path, 'wb') as f:
             f.write(data)
 
-        print(f'File saved to {file_path}')
+        print(f'\t\x1B[32;1mSaved to {file_path}\x1B[0m')
 
     def update_view(self, enc: bool=True, hex: bool=True) -> None:
         if enc:
@@ -588,7 +622,17 @@ class Application():
         self.main_window.show_all()
 
 if __name__ == '__main__':
+    # Disable header bar warning
+    Gtk.Settings.get_default().set_property('gtk-decoration-layout', 'menu:close')
+
+    # Test if run' from pyinstaller one-file bundle
+    if getattr(sys, 'frozen', False):
+        # Change working directory to the bundle resource path
+        os.chdir(sys._MEIPASS)
+
     app = Application('ui/main.ui')
+
+    print('\x1B[32;1mShowing UI!\x1B[0m')
 
     app.show()
 
