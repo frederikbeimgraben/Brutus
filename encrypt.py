@@ -11,22 +11,25 @@ Contains:
 """
 
 # Standard imports
-from typing import Dict, Generator, Iterable, List, TypeVar
+from typing import Callable, Dict, Generator, Iterable, List, Sized, SupportsIndex, Optional
 
 # Type Hints  (I just like type hints, okay?)
-S = TypeVar("S")
-A = List[S] | str
+S = str | bytes | int
+
+A = List[S]
+
 T = Iterable[S]
 
+class KeyStr(List[S], Sized, SupportsIndex, Iterable[S]):
+    pass
 
-# Constants
-ALPHABET: A = \
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890 !?.\n\r\t)]}{[(+-*/=<>@#$%^&|~`\\\"';:,_"
+KS = KeyStr | str
 
+K = int
 
 # Functions
 ## Invert the Alphabet Table
-def invert_table(table: A=ALPHABET) -> A:
+def invert_table(table: A) -> Dict[S, int]:
     """
     Inverts an alphabet table.
 
@@ -43,7 +46,7 @@ def invert_table(table: A=ALPHABET) -> A:
 
 ## Hashing Algorithm to convert a sequence of symbols to an offset value 
 ## (For Caesar Shift by Word Key)
-def hash_sequence(text: T, table: A=ALPHABET) -> int:
+def hash_sequence(text: T | KS | S, table: A) -> int:
     """
     Hashes a sequence of symbols to an offset value.
 
@@ -54,6 +57,17 @@ def hash_sequence(text: T, table: A=ALPHABET) -> int:
     Returns:
         int: The hashed offset value.
     """
+
+    if isinstance(text, S):
+        if isinstance(text, str):
+            return table.index(text)
+        elif isinstance(text, int):
+            return text
+        elif isinstance(text, bytes):
+            return table.index(text)
+        else:
+            raise TypeError(f"Cannot hash sequence of type {type(text)}")
+
     
     inverted: Dict[S, int] = invert_table(table)
 
@@ -61,34 +75,10 @@ def hash_sequence(text: T, table: A=ALPHABET) -> int:
         inverted[symbol]
         for symbol in text if symbol in inverted
     ) % len(table)
-    
-
-def support_hashing(func: callable) -> callable:
-    """
-    Decorator to allow for hashing of sequences of symbols.
-
-    Args:
-        func (callable): The function to decorate.
-
-    Returns:
-        callable: The decorated function.
-    """
-    def wrapper(text: S | T, key: int | T, table: A=ALPHABET) -> int:
-        if not isinstance(key, int):
-            key = hash_sequence(key, table)
-
-        return func(text, key, table)
-    
-    wrapper.__name__ = func.__name__
-    wrapper.__doc__ = func.__doc__
-    wrapper.__annotations__ = func.__annotations__
-
-    return wrapper
 
 ## Shifting Algorithms
 ### Simple Caesar Shift
-@support_hashing
-def shift_symbol(symbol: S, shift: int, table: A=ALPHABET) -> S:
+def shift_symbol(symbol: S, shift: int, table: A) -> S:
     """
     Shifts a symbol by a given shift value.
 
@@ -102,16 +92,16 @@ def shift_symbol(symbol: S, shift: int, table: A=ALPHABET) -> S:
     """
 
     if symbol not in table:
-        if isinstance(symbol, str):
-            symbol = str(symbol.encode("utf-8"))[2:-1]
-        raise ValueError(f"The symbol '{symbol}' is not in the alphabet.")
+        # if isinstance(symbol, str):
+        #     symbol = str(symbol.encode("utf-8"))[2:-1]
+        # raise ValueError(f"The symbol '{symbol}' is not in the alphabet.")
+        return symbol
 
     index: int = table.index(symbol)
 
     return table[(index + shift) % len(table)]
 
-@support_hashing
-def caesar_shift_sequence(text: T, offset: int, table: A=ALPHABET) -> Generator[S, None, None]:
+def caesar_shift_sequence(text: T, offset: int, table: A) -> Generator[S, None, None]:
     """
     Shifts a Sequence by a given offset value.
 
@@ -130,8 +120,7 @@ def caesar_shift_sequence(text: T, offset: int, table: A=ALPHABET) -> Generator[
         for symbol in text
     )
 
-@support_hashing
-def caesar_encrypt_sequence(text: T, key: int, table: A=ALPHABET) -> Generator[S, None, None]:
+def caesar_encrypt_sequence(text: T, key: int, table: A) -> Generator[S, None, None]:
     """
     Encrypts a sequence using a Caesar Shift.
 
@@ -147,8 +136,7 @@ def caesar_encrypt_sequence(text: T, key: int, table: A=ALPHABET) -> Generator[S
 
     return caesar_shift_sequence(text, key, table)
 
-@support_hashing
-def caesar_decrypt_sequence(text: T, key: int, table: A=ALPHABET) -> Generator[S, None, None]:
+def caesar_decrypt_sequence(text: T, key: int, table: A) -> Generator[S, None, None]:
     """
     Decrypts a sequence using a Caesar Shift.
 
@@ -164,8 +152,7 @@ def caesar_decrypt_sequence(text: T, key: int, table: A=ALPHABET) -> Generator[S
 
     return caesar_shift_sequence(text, -key, table)
 
-@support_hashing
-def caesar_encrypt_str(text: str, key: int, table: A=ALPHABET) -> str:
+def caesar_encrypt_str(text: str, key: int, table: A) -> str:
     """
     Encrypts a text using a Caesar Shift.
 
@@ -179,11 +166,11 @@ def caesar_encrypt_str(text: str, key: int, table: A=ALPHABET) -> str:
     """
 
     return "".join(
+        str(symbol) for symbol in
         caesar_encrypt_sequence(text, key, table)
     )
 
-@support_hashing
-def caesar_decrypt_str(text: str, key: int, table: A=ALPHABET) -> str:
+def caesar_decrypt_str(text: str, key: int, table: A) -> str:
     """
     Decrypts a text using a Caesar Shift.
 
@@ -197,6 +184,7 @@ def caesar_decrypt_str(text: str, key: int, table: A=ALPHABET) -> str:
     """
 
     return "".join(
+        str(symbol) for symbol in
         caesar_decrypt_sequence(text, key, table)
     )
 
@@ -204,9 +192,9 @@ def caesar_decrypt_str(text: str, key: int, table: A=ALPHABET) -> str:
 ### Vigenere Cipher
 def vigenere_shift_sequence(
         text: T,
-        key: T,
+        key: KS,
         reverse: bool=False,
-        table: A=ALPHABET,
+        table: Optional[A]=None,
         assert_len=False) -> Generator[S, None, None]:
     """
     Shifts a sequence by a given key.
@@ -220,11 +208,10 @@ def vigenere_shift_sequence(
         Generator[S, None, None]: The shifted text.
             We use a generator here to allow for lazy evaluation of eg. a stream of characters.
     """
+    
+    if table is None:
+        raise ValueError("The alphabet must be specified.")
 
-    # Check if the key is as long as the text if assert_len is True
-    # Otherwise, we will just wrap around the key
-    assert not assert_len or len(key) == len(text), \
-        "The key must be as long as the text."
     
     return (
         shift_symbol(
@@ -241,7 +228,7 @@ def vigenere_shift_sequence(
         ) for i, symbol in enumerate(text)
     )
 
-def vigenere_encrypt_sequence(text: T, key: T, table: A=ALPHABET) -> Generator[S, None, None]:
+def vigenere_encrypt_sequence(text: T, key: KS, table: A) -> Generator[S, None, None]:
     """
     Shifts a sequence by a given key.
 
@@ -261,7 +248,7 @@ def vigenere_encrypt_sequence(text: T, key: T, table: A=ALPHABET) -> Generator[S
         table=table
     )
 
-def vigenere_decrypt_sequence(text: T, key: T, table: A=ALPHABET) -> Generator[S, None, None]:
+def vigenere_decrypt_sequence(text: T, key: KS, table: A) -> Generator[S, None, None]:
     """
     Shifts a sequence by a given key.
 
@@ -282,7 +269,7 @@ def vigenere_decrypt_sequence(text: T, key: T, table: A=ALPHABET) -> Generator[S
         table=table
     )
 
-def vigenere_encrypt_str(text: str, key: str, table: A=ALPHABET) -> str:
+def vigenere_encrypt_str(text: str, key: str, table: A) -> str:
     """
     Encrypts a text using a Vigenere Cipher.
 
@@ -296,10 +283,11 @@ def vigenere_encrypt_str(text: str, key: str, table: A=ALPHABET) -> str:
     """
 
     return "".join(
+        str(symbol) for symbol in
         vigenere_encrypt_sequence(text, key, table)
     )
 
-def vigenere_decrypt_str(text: str, key: str, table: A=ALPHABET) -> str:
+def vigenere_decrypt_str(text: str, key: str, table: A) -> str:
     """
     Decrypts a text using a Vigenere Cipher.
 
@@ -313,6 +301,7 @@ def vigenere_decrypt_str(text: str, key: str, table: A=ALPHABET) -> str:
     """
 
     return "".join(
+        str(symbol) for symbol in
         vigenere_decrypt_sequence(text, key, table)
     )
 
@@ -324,13 +313,20 @@ REPLACEMENTS = {
     '\r': '⇤',
 }
 
-# Prettyfying
-def prettyfy(text: str) -> str:
+
+REPLACEMENTS_2 = {
+    '\n': '↵\n',
+    '\t': '⇥\t',
+    '\r': '⇤',
+}
+
+# prettifying
+def prettify(text: str) -> str:
     """
     Prettyfies a text.
 
     Args:
-        text (str): The text to prettyfy.
+        text (str): The text to prettify.
 
     Returns:
         str: The prettyfied text.
@@ -340,6 +336,20 @@ def prettyfy(text: str) -> str:
         REPLACEMENTS.get(char, char) for char in text
     )
 
+def prettify2(text: str) -> str:
+    """
+    Prettyfies a text.
+
+    Args:
+        text (str): The text to prettify.
+
+    Returns:
+        str: The prettyfied text.
+    """
+
+    return ''.join(
+        REPLACEMENTS_2.get(char, char) for char in text
+    )
 
 TEST_TEXT = \
 """Hello World!
@@ -355,7 +365,7 @@ culpa qui officia deserunt mollit anim id est laborum.
 Wrong\rRight"""
 
 
-def test_alg(alg_enc: callable, alg_dec: callable, key: T | int, text: str) -> None:
+def test_alg(alg_enc: Callable, alg_dec: Callable, key: T | int, text: str) -> None:
     """
     Tests an algorithm.
 
@@ -379,11 +389,11 @@ def test_alg(alg_enc: callable, alg_dec: callable, key: T | int, text: str) -> N
 f"""\x1B[32m==============\x1B[1mORIGINAL\x1B[0;32m=============\x1B[0m
 {text_esc}
 \x1B[32m==============\x1B[1mESCAPED\x1B[0;32m==============\x1B[0m
-{prettyfy(text)}
+{prettify(text)}
 \x1B[32m==============\x1B[1mENCRYPTED\x1B[0;32m============\x1B[0m
-{prettyfy(enc)}
+{prettify(enc)}
 \x1B[32m=========\x1B[1mDECRYPTED ESCAPED\x1B[0;32m=========\x1B[0m
-{prettyfy(dec)}
+{prettify(dec)}
 \x1B[32m=============\x1B[1mDECRYPTED\x1B[0;32m=============\x1B[0m
 {dec_esc}
 \x1B[32m====================================\x1B[0m
