@@ -1,3 +1,4 @@
+#!python3
 """
 Graphical User Interface for the application using gi.repository: Gtk+
 
@@ -12,7 +13,7 @@ from typing import Any, List
 # Third party imports
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gio, Gdk, GLib
+from gi.repository import Gtk, Gio, Gdk, GLib # type: ignore
 
 # Local imports
 from encrypt import caesar_encrypt_sequence, caesar_decrypt_sequence, S, T, A
@@ -252,12 +253,12 @@ class Application():
             if self.dec:
                 data = bytes(
                     b for b in
-                    caesar_decrypt_sequence(used_data, int(key), alphabet)
+                    caesar_decrypt_sequence(used_data, int(key), alphabet) # type: ignore
                 )
             else:
                 data = bytes(
                     b for b in
-                    caesar_encrypt_sequence(used_data, int(key), alphabet)
+                    caesar_encrypt_sequence(used_data, int(key), alphabet) # type: ignore
                 )
         elif algorithm == 'vigenere':
             key_vig: List[int] = [
@@ -268,12 +269,12 @@ class Application():
             if self.dec:
                 data = bytes(
                     b for b in
-                    vigenere_decrypt_sequence(used_data, key_vig, alphabet)
+                    vigenere_decrypt_sequence(used_data, key_vig, alphabet) # type: ignore
                 )
             else:
                 data = bytes(
                     b for b in
-                    vigenere_encrypt_sequence(used_data, key_vig, alphabet)
+                    vigenere_encrypt_sequence(used_data, key_vig, alphabet) # type: ignore
                 )
         else:
             raise ValueError(f'Unknown algorithm: {algorithm}')
@@ -409,15 +410,17 @@ class Application():
         text: str = self.text_enc if self.dec else self.text_dec
 
         # Detect the key
-        key: int = next(caesar_guess_shift(
-            text=text,
-            lang='en',
-            min_shift=0,
-            max_shift=255,
-            alphabet=[
-                chr(i) for i in self.alphabet
-            ]
-        ))
+        key: int = next(
+            caesar_guess_shift(
+                text=text,
+                lang='en',
+                min_shift=0,
+                max_shift=255,
+                alphabet=[
+                    chr(i) for i in self.alphabet
+                ]
+            )
+        )
 
         # Set the key
         self.key_entry.set_text(str(key))

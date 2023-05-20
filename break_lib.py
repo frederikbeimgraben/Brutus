@@ -19,17 +19,13 @@ Frequencies and wordlists are saved in `dicts/<lang>/words.json` and `dicts/<lan
 
 from functools import cache
 import string
-import itertools
-import math
 import operator
-import re
 import json
 
-from collections import Counter
-from typing import Iterable, Tuple
+from typing import Generator, List, Optional, Tuple
 
 # Local imports
-from encrypt import caesar_encrypt_sequence, caesar_decrypt_sequence
+from encrypt import caesar_encrypt_sequence, caesar_decrypt_sequence, S, KS, A, T
 from parallel_stream import async_map
 
 # Constants
@@ -65,7 +61,7 @@ def caesar_guess_shift(
         lang: str,
         min_shift: int = 0,
         max_shift: int = 26,
-        alphabet: str = DEFAULT_ALPHABET) -> Iterable[int]:
+        alphabet: str | List[str] = DEFAULT_ALPHABET) -> Generator[int, None, None]:
     """
     Guess the shift of a caesar cipher.
 
@@ -113,7 +109,7 @@ def caesar_guess_shift(
 
 ### Alphabet
 def caesar_guess_alphabet(
-        text: str) -> Iterable[str]:
+        text: str) -> str:
     """
     Guess the alphabet of a caesar cipher.
     Do this by the characters contained in the text.
@@ -154,7 +150,7 @@ def caesar_guess_alphabet(
 def caesar_break(
         text: str,
         lang: str='en',
-        alphabet: str=None) -> Tuple[int, str, str]:
+        alphabet: Optional[str]=None) -> int:
     """
     Break a caesar cipher.
 
@@ -175,7 +171,10 @@ def caesar_break(
     
     # Guess the alphabet
     if alphabet is None:
-        alphabet = caesar_guess_alphabet(text)
+        alphabet = ''.join(
+            str(c) for c in
+            caesar_guess_alphabet(text)
+        )
 
     # Guess the shift
     shifts = caesar_guess_shift(text, lang, alphabet=alphabet)
@@ -186,13 +185,18 @@ def caesar_break(
     # Decrypt the text
     @async_map(max_workers=4, wait=False)
     def guess_text_with_words(
-        shift: int) -> Tuple[int, str, str]:
+        shift: int) -> Tuple[int, int]:
         """
         Guess the text with a given shift.
         """
 
         # Decrypt the text
-        decrypted = ''.join(caesar_decrypt_sequence(text, shift, table=alphabet))
+        # Ignore pylance type issue
+        # pylint: disable=unsubscriptable-object
+        decrypted = ''.join(
+            str(c) for c in
+            caesar_decrypt_sequence(text, shift, table=alphabet) # type: ignore
+        )
 
         # Split the text into words
         words = decrypted.split(' ')
@@ -205,11 +209,11 @@ def caesar_break(
         )
 
         # Return the number of words
-        return shift, num_words, decrypted
+        return shift, num_words
     
     # Get the number of words for each shift
-    num_words = list(guess_text_with_words(shifts))
-    num_words.sort(key=operator.itemgetter(1), reverse=True)
+    num_words = list(guess_text_with_words(shifts))          # type: ignore
+    num_words.sort(key=operator.itemgetter(1), reverse=True) # type: ignore
 
     # Return the best shift
     return num_words[0]
@@ -224,7 +228,10 @@ Imperdiet proin fermentum leo vel orci porta. Porttitor rhoncus dolor purus non 
 Tincidunt dui ut ornare lectus sit amet. Sit amet consectetur adipiscing elit ut aliquam purus sit. Mollis aliquam ut porttitor leo a diam sollicitudin tempor. Sit amet volutpat consequat mauris. Id consectetur purus ut faucibus pulvinar elementum integer. Id porta nibh venenatis cras. Proin nibh nisl condimentum id. Mauris commodo quis imperdiet massa tincidunt nunc. Mattis enim ut tellus elementum. Commodo nulla facilisi nullam vehicula ipsum. Urna porttitor rhoncus dolor purus non.
 '''
 
-    encrypted = ''.join(caesar_encrypt_sequence(clear, 10, table=DEFAULT_ALPHABET))
+    encrypted = ''.join(
+        str(c) for c in
+        caesar_encrypt_sequence(clear, 10, table=DEFAULT_ALPHABET) # type: ignore
+    )
 
     print(encrypted)
 
