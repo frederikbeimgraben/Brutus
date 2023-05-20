@@ -34,7 +34,7 @@ def __run(
         queue: multiprocessing.Queue,
         worker_id: int,
         *args,
-        **kwargs) -> Tuple[float, Any]:
+        **kwargs) -> None:
     """
     Unpacks a pickled function, runs it and puts the result into the queue
     This is necessary because multiprocessing can't pickle all functions and thus we have to pickle
@@ -56,8 +56,8 @@ def __run(
 
 
 def async_map(
-        max_workers: int=None,
-        break_on_except: Iterable[Exception]=(Exception,),
+        max_workers: Optional[int]=None,
+        break_on_except: Iterable[Exception]=(Exception,), # type: ignore
         timed: bool=False,
         ordered: bool=False,
         timeout: int=5,
@@ -127,7 +127,7 @@ def async_map(
                 # Make the linter ignore used before assignment
                 # pylint: disable=used-before-assignment
                 case (_, _, result,) if any(
-                    isinstance(result, exception)
+                    isinstance(result, exception) # type: ignore
                     for exception in break_on_except):
                     # If the result is an exception, raise it
                     for _, worker in workers:
@@ -146,14 +146,14 @@ def async_map(
         params = Tuple[tuple(
             Optional[parameter.annotation]
             for parameter in signature.parameters.values()
-        )]
+        )] # type: ignore
         returns = signature.return_annotation
 
         # This is the `replacement` function that will be returned
         def new(
             input_stream: Iterable[params],
             *global_args,
-            **global_kwargs) -> Iterable[returns]:
+            **global_kwargs) -> Iterable[returns]: # type: ignore
 
             # Check if the input stream is iterable
             if not '__next__' in dir(input_stream):
@@ -186,7 +186,7 @@ def async_map(
                         # This will be caught by the outer try-except
                         # If we would use a for loop, it would catch the exception 
                         # which we don't want
-                        args = next(input_stream)
+                        args = next(input_stream) # type: ignore
 
                         # If the arguments are not a tuple, make them a tuple
                         args = (args, ) if not isinstance(args, tuple) else args

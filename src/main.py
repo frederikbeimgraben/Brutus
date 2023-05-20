@@ -5,17 +5,17 @@ Graphical User Interface for the application using gi.repository: Gtk+
 Use the `ui/main_window.ui` as the UI source file.
 """
 
-print('\x1B[35mImporting...\x1B[0m', end='')
-
 # Standard library imports
 import os
 import string
-from typing import Any, List
+from typing import Any, Generator, List, Optional
 import subprocess
 
 # Get python path site-packages
 command = 'python3 -c "import site; print(site.getsitepackages()[0])"'
 site_packages = subprocess.check_output(command, shell=True).decode('utf-8').strip()
+
+print(f'Using site-packages: {site_packages}')
 
 # ls the site-packages directory
 command = f'ls {site_packages}'
@@ -29,16 +29,14 @@ if 'gi' not in site_packages_ls:
 import sys
 sys.path.append(site_packages)
 
-import gi
+import gi # type: ignore
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, GObject
+from gi.repository import Gtk, Gdk, GObject # type: ignore
 
 # Local imports
 from encrypt import caesar_encrypt_sequence, caesar_decrypt_sequence
 from encrypt import vigenere_encrypt_sequence, vigenere_decrypt_sequence
 from break_lib import caesar_guess_alphabet, caesar_guess_shift
-
-print('\t\x1B[32;1mDone\x1B[0m')
 
 # Constants
 BYTE_ALPHABET = [
@@ -80,6 +78,9 @@ class Application():
 
     # Non Readable Flag
     non_readable: bool = False
+
+    # Keys generator
+    keys: Optional[Generator[str, None, None]]
 
     # Alphabet
     @property
@@ -204,6 +205,7 @@ class Application():
                 )
 
     def update_input(self, enc: bool=True) -> None:
+        self.keys = None
         if self.non_readable:
             return
 
@@ -487,13 +489,13 @@ class Application():
             return
         if not self.dec:
             return
+        
+        if self.keys is None:
+            # Get the text
+            text: str = self.text_enc if self.dec else self.text_dec
 
-        # Get the text
-        text: str = self.text_enc if self.dec else self.text_dec
-
-        # Detect the key
-        key: int = next(
-            caesar_guess_shift(
+            # Detect the key
+            self.keys = caesar_guess_shift(
                 text=text,
                 lang='en',
                 min_shift=0,
@@ -502,8 +504,12 @@ class Application():
                     chr(i) for i in self.alphabet
                 ]
             )
-        )
+        
+        key: int = next(self.keys, 0)
 
+        if key == 0:
+            self.keys = None
+                
         # Set the key
         self.key_entry.set_text(str(key))
 
@@ -515,6 +521,7 @@ class Application():
 
     def update_direction(self, switch: Gtk.Switch, state: bool) -> None:
         self.update_text_views()
+        self.keys = None
 
     def update_text_views(self) -> None:
         self.update_view(not self.dec, False)
@@ -554,6 +561,8 @@ class Application():
             self.non_readable = False
 
     def update_algorithm(self, combo: Gtk.ComboBox) -> None:
+        self.keys = None
+
         # Apply the algorithm
         self.apply_algorithm(self.algorithm, self.alphabet, self.key)
 
@@ -561,6 +570,8 @@ class Application():
         self.update_text_views()
 
     def update_alphabet(self, combo: Gtk.ComboBox) -> None:
+        self.keys = None
+
         # Get the alphabet
         alphabet: List[int] = self.alphabet
 
@@ -571,6 +582,8 @@ class Application():
         self.update_text_views()
 
     def update_key(self, entry: Gtk.Entry) -> None:
+        self.keys = None
+        
         # Get the key
         key: str = entry.get_text()
 
@@ -580,7 +593,9 @@ class Application():
         # Update the view
         self.update_text_views()
 
-    def update_text(self, buffer: Gtk.TextBuffer) -> None:        
+    def update_text(self, buffer: Gtk.TextBuffer) -> None:
+        self.keys = None
+
         # Update input
         self.update_input(self.dec)
 
@@ -722,7 +737,7 @@ if __name__ == '__main__':
     # Test if run' from pyinstaller one-file bundle
     if getattr(sys, 'frozen', False):
         # Change working directory to the bundle resource path
-        os.chdir(sys._MEIPASS)
+        os.chdir(sys._MEIPASS) # type: ignore
     else:
         # Get file directory
         os.chdir(os.path.dirname(os.path.realpath(__file__)))
