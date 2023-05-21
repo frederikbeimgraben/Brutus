@@ -3,7 +3,7 @@
 
 ![Brutus](img/UI_1.png)
 
-## Aufgabenstellung
+## Aufgabenstellung / Assignment
 > **Historische Chiffren und wie man sie brechen kann** \
 Entwickeln Sie ein Programm, das es Ihnen erlaubt einen Text mit einem historischen Chiffrier-
 algorithmus zu verschlüsseln bzw. einen verschlüsselten Text zu entschlüsseln. Beginnen Sie z.B. mit
@@ -35,18 +35,18 @@ Possible extensions are:
 Psm Jzpw-Fdcbjqc spqxvfz nit Sopfuwvje vcfrdmo, iovo poz Uqhb ogb tbzq ofzeo jed! Qtf oz ag ucsl
 nioz sau pka tqrz wuot torejqbqhqb.
 
-## Installation / Running
+## Installation und Ausführung / Installation and Running
 
 This program is written for Linus mainly, but should work on Windows and Mac as well with some minor changes. (you will have to have Gtk installed)
 
-### Prerequisites:
+### Benötigte Pakete / Prerequisites:
 - Python >=3.8
   - PyGObject
   - typing
   - functools
   - pyinstaller *(for building)*
 
-### To run the program:
+### Zum Ausführen des Programms / To run the program:
 ```sh
 git clone https://github.com/frederikbeimgraben/Info1-Projekt
 cd Info1-Projekt
@@ -56,7 +56,7 @@ python src/main.py
 Or download the latest release from [here](https://github.com/frederikbeimgraben/Brutus/releases) and run it.
 This will require you to have PyGObject installed.
 
-### To install the program:
+### Zur Installation des Programms / To install the program:
 ```sh
 git clone https://github.com/frederikbeimgraben/Info1-Projekt
 cd Info1-Projekt
@@ -65,6 +65,14 @@ make
 sudo make install
 ```
 
-## Other included scripts:
+## Andere enthaltene Dateien / Other included files:
 - `src/encrypt_file.py` - Encrypts a file with the given cipher. \
   For usage run `python src/encrypt_file.py --help`.
+
+## Fortschritt / Progress
+- [x] Caesar Chiffre / Caesar Cipher
+- [x] Vigenère Chiffre / Vigenère Cipher
+- [x] Basis UI / Basic UI
+- [ ] Enigma Chiffre / Enigma Cipher
+- [ ] AES Chiffre / AES Cipher
+- [ ] Es wird noch mehr / There´s more to come
