@@ -8,7 +8,7 @@ Use the `ui/main_window.ui` as the UI source file.
 # Standard library imports
 import os
 import string
-from typing import Any, Generator, List, Optional
+from typing import Any, Generator, List, Optional, Dict
 import subprocess
 
 # Get python path site-packages
@@ -40,12 +40,12 @@ from encrypt import vigenere_encrypt_sequence, vigenere_decrypt_sequence
 from break_lib import caesar_guess_alphabet, caesar_guess_shift
 
 # Constants
-BYTE_ALPHABET = [
+BYTE_ALPHABET: List[int] = [
     n for n in range(256)
 ]
 
 # BYTES, lower, upper, letters, letters and numbers, None
-ALPHABETS = {
+ALPHABETS: Dict[str, List[int] | None] = {
     '0': BYTE_ALPHABET,
     '1': list(range(97, 123)) + [32],
     '2': list(range(65, 91)) + [32],
@@ -55,7 +55,7 @@ ALPHABETS = {
     '6': None
 }
 
-ALGORITHMS = {
+ALGORITHMS: Dict[str, str] = {
     '0': 'caesar',
     '1': 'vigenere'
 }
@@ -114,48 +114,65 @@ class Application():
         return self.direction_switch.get_active()
 
     def __init__(self, file: str, main_obj: str='main_window') -> None:
+        """
+        Initializes the main window of the application.
+
+        Args:
+            file (str): The path to the UI file.
+            main_obj (str, optional): The ID of the main window object in the UI file. Defaults to 'main_window'.
+
+        Returns:
+            None
+        """
+        
+        # Create the builder and load the UI file
         self.builder = Gtk.Builder()
 
-        print('\x1B[35mLoading UI...\x1B[0m', end='', flush=True)
-
+        # Load the UI file
         self.builder.add_from_file(file)
 
+        # Get the main window from the UI file
         self.main_window = self.builder.get_object(main_obj)
 
         # Load window icon from 'ui/Icon.png'
         icon = GdkPixbuf.Pixbuf.new_from_file('ui/Brutus.png')
         self.main_window.set_icon(icon)
 
-        print('\t\x1B[32;1mDone\x1B[0m')
+        # Get all the objects we need
+        self.get_objects()
 
-        try:
-            self.get_objects()
-        except AssertionError as e:
-            print(e)
-            exit(1)
-
-        # Set data based on default values
-        self.update_input()
-        self.update_input(False)
-
-        print('\x1B[35mLinking...\x1B[0m', end='', flush=True)
-
+        # Link the menus to actions
         self.link_file_actions()
         self.link_algorithm_actions()
         self.link_detect_actions()
         self.link_copy_actions()
 
-        print('\t\x1B[32;1mDone\x1B[0m')
+        # Load input data
+        self.update_input(enc=False)
 
+        # Apply Caesar Cipher to data
         self.apply_algorithm('caesar', BYTE_ALPHABET, '0')
 
+        # Update views
         self.update_text_views()
 
         # Link close button to quit
         self.main_window.connect('delete-event', Gtk.main_quit)
 
     def load_file(self, file_path: str, enc: bool=True) -> None:
+        """
+        Loads a file into the application.
+
+        Args:
+            file_path (str): The path to the file to load.
+            enc (bool, optional): Whether the file is encrypted or not. Defaults to True.
+
+        Returns:
+            None
+        """
+
         print(f'Loading file {file_path}...', end='', flush=True)
+
         with open(file_path, 'rb') as f:
             data: bytes = f.read()
 
@@ -178,7 +195,19 @@ class Application():
         print('\t\x1B[32;1mDone\x1B[0m')
 
     def save_file(self, file_path: str, enc: bool=True) -> None:
+        """
+        Saves the data to a file.
+
+        Args:
+            file_path (str): The path to the file to save.
+            enc (bool, optional): Whether the file is encrypted or not. Defaults to True.
+
+        Returns:
+            None
+        """
+
         print(f'Saving file {file_path}...', end='', flush=True)
+
         if enc:
             data: bytes = self.data_enc
         else:
@@ -190,6 +219,17 @@ class Application():
         print(f'\t\x1B[32;1mSaved to {file_path}\x1B[0m')
 
     def update_view(self, enc: bool=True, hex: bool=True) -> None:
+        """
+        Updates the view of a single text view.
+
+        Args:
+            enc (bool, optional): Whether to update the encrypted or decrypted view. Defaults to True.
+            hex (bool, optional): Whether to update the hex or text view. Defaults to True.
+
+        Returns:
+            None
+        """
+
         if enc:
             if hex:
                 self.encrypted_hex_buffer.set_text(
@@ -197,7 +237,7 @@ class Application():
                 )
             else:
                 self.encrypted_text_buffer.set_text(
-                    self.__beautify_ascii(self.text_enc)
+                    self.__check_readable(self.text_enc)
                 )
         else:
             if hex:
@@ -206,33 +246,41 @@ class Application():
                 )
             else:
                 self.decrypted_text_buffer.set_text(
-                    self.__beautify_ascii(self.text_dec)
+                    self.__check_readable(self.text_dec)
                 )
 
     def update_input(self, enc: bool=True) -> None:
+        """
+        Updates the input data. (pulls from the text views).
+
+        Args:
+            enc (bool, optional): Whether to update the encrypted or decrypted view. Defaults to True.
+
+        Returns:
+            None
+        """
+
+        # Reset keys generator
         self.keys = None
+
         if self.non_readable:
             return
 
         if enc:
-            self.text_enc = self.__debeautify_ascii(
-                self.encrypted_text_buffer.get_text(
-                    self.encrypted_text_buffer.get_start_iter(),
-                    self.encrypted_text_buffer.get_end_iter(),
-                    True
-                )
+            self.text_enc = self.encrypted_text_buffer.get_text(
+                self.encrypted_text_buffer.get_start_iter(),
+                self.encrypted_text_buffer.get_end_iter(),
+                True
             )
             self.data_enc = self.text_enc.encode()
             hex_enc = ' '.join(
                 [f'{b:02X}' for b in self.data_enc]
             )
         else:
-            self.text_dec = self.__debeautify_ascii(
-                self.decrypted_text_buffer.get_text(
-                    self.decrypted_text_buffer.get_start_iter(),
-                    self.decrypted_text_buffer.get_end_iter(),
-                    True
-                )
+            self.text_dec = self.decrypted_text_buffer.get_text(
+                self.decrypted_text_buffer.get_start_iter(),
+                self.decrypted_text_buffer.get_end_iter(),
+                True
             )
             self.data_dec = self.text_dec.encode()
             self.hex_dec = ' '.join(
@@ -240,6 +288,18 @@ class Application():
             )
 
     def apply_algorithm(self, algorithm: str, alphabet: List[int], key: str) -> None:
+        """
+        Applies an algorithm to the active data.
+
+        Args:
+            algorithm (str): The algorithm to apply.
+            alphabet (List[int]): The alphabet to use.
+            key (str): The key to use.
+
+        Returns:
+            None
+        """
+
         if self.dec:
             data: bytes = self.data_enc
         else:
@@ -308,6 +368,17 @@ class Application():
             self.hex_enc = hex
 
     def open_file_dialog_response(self, dialog, response_id):
+        """
+        Callback for the open file dialog.
+
+        Args:
+            dialog (Gtk.FileChooserDialog): The dialog.
+            response_id (Gtk.ResponseType): The response.
+
+        Returns:
+            None
+        """
+
         if response_id == Gtk.ResponseType.OK:
             # Get the file path
             file_path = dialog.get_filename()
@@ -344,6 +415,17 @@ class Application():
         dialog.hide()
 
     def save_file_dialog_response(self, dialog, response_id):
+        """
+        Callback for the save file dialog.
+
+        Args:
+            dialog (Gtk.FileChooserDialog): The dialog.
+            response_id (Gtk.ResponseType): The response.
+
+        Returns:
+            None
+        """
+
         if response_id == Gtk.ResponseType.OK:
             # Get the file path
             file_path = dialog.get_filename()
@@ -397,6 +479,13 @@ class Application():
         dialog.hide()
 
     def link_file_actions(self) -> None:
+        """
+        Links the file actions to the callbacks.
+
+        Returns:
+            None
+        """
+
         # Open File
         self.open_file_dialog.connect('response', self.open_file_dialog_response)
         self.open_file_button.connect('clicked', lambda _: self.open_file_dialog.show())
@@ -413,6 +502,8 @@ class Application():
 
     def link_algorithm_actions(self) -> None:
         """
+        Links the algorithm actions to the callbacks.
+
         The Algorithm should be applied upon:
             - Changing the algorithm
             - Changing the alphabet
@@ -421,6 +512,9 @@ class Application():
 
         The algorithm should be applied based on:
             - Direction button
+
+        Returns:
+            None
         """
 
         # Algorithm
@@ -437,24 +531,68 @@ class Application():
         self.direction_switch.connect('state-set', self.update_direction)
 
     def link_detect_actions(self) -> None:
+        """
+        Links the detect actions to the callbacks.
+
+        Returns:
+            None
+        """
+
         # Alphabet
         self.alphabet_detect_button.connect('clicked', self.detect_alphabet)
         # Key
         self.key_detect_button.connect('clicked', self.detect_key)
 
     def link_copy_actions(self) -> None:
+        """
+        Links the copy actions to the callbacks.
+
+        Returns:
+            None
+        """
+
         # Copy
         self.copy_dec_button.connect('clicked', self.copy_dec)
         self.copy_enc_button.connect('clicked', self.copy_enc)
         self.clear_dec_button.connect('clicked', self.clear_dec)
 
     def copy_dec(self, button: Gtk.Button) -> None:
+        """
+        Callback for the copy decrypted button.
+
+        Args:
+            button (Gtk.Button): The button.
+
+        Returns:
+            None
+        """
+
         self.copy(self.decrypted_text_buffer)
 
     def copy_enc(self, button: Gtk.Button) -> None:
+        """
+        Callback for the copy encrypted button.
+
+        Args:
+            button (Gtk.Button): The button.
+
+        Returns:
+            None
+        """
+
         self.copy(self.encrypted_text_buffer)
 
     def copy(self, buffer: Gtk.TextBuffer) -> None:
+        """
+        Copies the text from the buffer to the clipboard.
+
+        Args:
+            buffer (Gtk.TextBuffer): The buffer.
+
+        Returns:
+            None
+        """
+
         # Get the clipboard
         clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
 
@@ -469,14 +607,39 @@ class Application():
         clipboard.set_text(text, -1)
 
     def clear_dec(self, button: Gtk.Button) -> None:
+        """
+        Callback for the clear decrypted button.
+
+        Args:
+            button (Gtk.Button): The button.
+
+        Returns:
+            None
+        """
+
+        # Set the data to empty
         self.data_dec = b''
         self.hex_dec = ''
         self.text_dec = ''
+
+        # Update the active text view
         self.decrypted_text_buffer.set_text('')
+
+        # Update the other text views
         self.apply_algorithm(self.algorithm, self.alphabet, self.key)
         self.update_text_views()
 
     def detect_alphabet(self, button: Gtk.Button) -> None:
+        """
+        Callback for the detect alphabet button.
+
+        Args:
+            button (Gtk.Button): The button.
+
+        Returns:
+            None
+        """
+
         if self.algorithm != 'caesar':
             return
 
@@ -490,6 +653,17 @@ class Application():
         self.alphabet_combo.set_active_id(alphabet)
 
     def detect_key(self, button: Gtk.Button) -> None:
+        """
+        Callback for the detect key button.
+
+        Args:
+            button (Gtk.Button): The button.
+
+        Returns:
+            None
+        """
+
+
         if self.algorithm != 'caesar':
             return
         if not self.dec:
@@ -525,10 +699,28 @@ class Application():
         self.update_text_views()
 
     def update_direction(self, switch: Gtk.Switch, state: bool) -> None:
+        """
+        Callback for the direction switch.
+
+        Args:
+            switch (Gtk.Switch): The switch. (gets ignored)
+            state (bool): The state. (gets ignored)
+
+        Returns:
+            None
+        """
+
         self.update_text_views()
         self.keys = None
 
     def update_text_views(self) -> None:
+        """
+        Updates the text views.
+
+        Returns:
+            None
+        """
+
         self.update_view(not self.dec, False)
         self.update_view(not self.dec, True)
         self.update_view(self.dec, True)
@@ -545,6 +737,13 @@ class Application():
         self.update_readable_text()
 
     def update_readable_text(self) -> None:
+        """
+        Makes text uneditable if it is not readable.
+
+        Returns:
+            None
+        """
+
         # Get the text for the active text view
         text = self.text_enc if self.dec else self.text_dec
 
@@ -566,6 +765,16 @@ class Application():
             self.non_readable = False
 
     def update_algorithm(self, combo: Gtk.ComboBox) -> None:
+        """
+        Callback for the algorithm combo box.
+
+        Args:
+            combo (Gtk.ComboBox): The combo box.
+
+        Returns:
+            None
+        """
+
         self.keys = None
 
         # Apply the algorithm
@@ -575,6 +784,16 @@ class Application():
         self.update_text_views()
 
     def update_alphabet(self, combo: Gtk.ComboBox) -> None:
+        """
+        Callback for the alphabet combo box.
+
+        Args:
+            combo (Gtk.ComboBox): The combo box.
+
+        Returns:
+            None
+        """
+
         self.keys = None
 
         # Get the alphabet
@@ -587,6 +806,16 @@ class Application():
         self.update_text_views()
 
     def update_key(self, entry: Gtk.Entry) -> None:
+        """
+        Callback for the key entry.
+
+        Args:
+            entry (Gtk.Entry): The entry.
+
+        Returns:
+            None
+        """
+
         self.keys = None
         
         # Get the key
@@ -599,6 +828,16 @@ class Application():
         self.update_text_views()
 
     def update_text(self, buffer: Gtk.TextBuffer) -> None:
+        """
+        Callback for the text buffer.
+
+        Args:
+            buffer (Gtk.TextBuffer): The text buffer.
+
+        Returns:
+            None
+        """
+
         self.keys = None
 
         # Update input
@@ -610,7 +849,17 @@ class Application():
         # Update the view
         self.update_text_views()
 
-    def __beautify_ascii(self, text: str) -> str:
+    def __check_readable(self, text: str) -> str:
+        """
+        Checks if the text is readable.
+
+        Args:
+            text (str): The text.
+
+        Returns:
+            str: The text if it is readable, otherwise an error message.
+        """
+
         # Check if there are non-readable characters
         if any(
             c not in string.printable
@@ -620,12 +869,15 @@ class Application():
         
         # Return the text
         return text
-    
-    def __debeautify_ascii(self, text: str) -> str:
-        # Return the text
-        return text
 
     def get_objects(self) -> None:
+        """
+        Gets the objects from the ui (glade) file.
+
+        Returns:
+            None
+        """
+
         # Get the objects
         ## Decrypted text view
         self.decrypted_text_view = self.builder.get_object('text_dec_box')
@@ -733,12 +985,7 @@ class Application():
     def show(self) -> None:
         self.main_window.show_all()
 
-if __name__ == '__main__':
-    # Disable header bar warning
-    Gtk.Settings.get_default().set_property('gtk-decoration-layout', 'menu:close')
-
-    app: Application
-
+def main() -> None:
     # Test if run' from pyinstaller one-file bundle
     if getattr(sys, 'frozen', False):
         # Change working directory to the bundle resource path
@@ -756,3 +1003,6 @@ if __name__ == '__main__':
 
     # Wait for the window to close
     Gtk.main()
+
+if __name__ == '__main__':
+    main()
