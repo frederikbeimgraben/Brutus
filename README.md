@@ -76,3 +76,4 @@ sudo make install
 - [ ] Enigma Chiffre / Enigma Cipher
 - [ ] AES Chiffre / AES Cipher
 - [ ] Es wird noch mehr / There´s more to come
+- [ ] Übersetzungen / Translations
