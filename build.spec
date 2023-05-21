@@ -9,7 +9,8 @@ a = Analysis(
     datas=[
         ('dicts/en/freqs.json', 'dicts/en/'),
         ('dicts/en/words.json', 'dicts/en/'),
-        ('ui/main.ui', 'ui/')
+        ('ui/main.ui', 'ui/'),
+        ('ui/Brutus.png', 'ui/')
     ],
     hiddenimports=[],
     hookspath=[],
@@ -45,6 +46,6 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     version='VERSION',
-    icon=['ui/icon.ico'],
+    icon=['ui/Brutus.png'],
     resources=[],
 )

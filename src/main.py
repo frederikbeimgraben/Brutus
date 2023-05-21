@@ -32,6 +32,7 @@ sys.path.append(site_packages)
 import gi # type: ignore
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, GObject # type: ignore
+from gi.repository import GdkPixbuf # type: ignore
 
 # Local imports
 from encrypt import caesar_encrypt_sequence, caesar_decrypt_sequence
@@ -120,6 +121,10 @@ class Application():
         self.builder.add_from_file(file)
 
         self.main_window = self.builder.get_object(main_obj)
+
+        # Load window icon from 'ui/Icon.png'
+        icon = GdkPixbuf.Pixbuf.new_from_file('ui/Brutus.png')
+        self.main_window.set_icon(icon)
 
         print('\t\x1B[32;1mDone\x1B[0m')
 
@@ -503,9 +508,9 @@ class Application():
                 alphabet=[
                     chr(i) for i in self.alphabet
                 ]
-            )
+            ) # type: ignore
         
-        key: int = next(self.keys, 0)
+        key: int = next(self.keys, 0) # type: ignore
 
         if key == 0:
             self.keys = None
