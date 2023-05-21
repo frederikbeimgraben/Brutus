@@ -83,14 +83,14 @@ def caesar_guess_shift(
 
     # Get the shifts (distance from space in alphabet)
     shifts = (
-        alphabet.index(char) - alphabet.index(' ')
+        (alphabet.index(char) - alphabet.index(' ')) % len(alphabet)
         for char, _ in sorted(
             (
                 (
                     char, 
-                    abs(
-                        freqs['word_len']
-                        - sum(len(word) for word in text.split(char)) / len(text.split(char))
+                    sum(
+                        (len(word) - freqs['word_len']) ** 2
+                        for word in text.split(char)
                     )
                 ) for char in alphabet
             ),
