@@ -48,7 +48,7 @@ This program is written for Linus mainly, but should work on Windows and Mac as 
 
 ### Zum Ausführen des Programms / To run the program:
 ```sh
-git clone https://github.com/frederikbeimgraben/Info1-Projekt
+git clone https://github.com/frederikbeimgraben/Brutus
 cd Info1-Projekt
 python src/main.py
 ```
@@ -58,7 +58,7 @@ This will require you to have PyGObject installed.
 
 ### Zur Installation des Programms / To install the program:
 ```sh
-git clone https://github.com/frederikbeimgraben/Info1-Projekt
+git clone https://github.com/frederikbeimgraben/Brutus
 cd Info1-Projekt
 
 make
