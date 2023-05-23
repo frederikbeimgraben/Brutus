@@ -60,6 +60,13 @@ ALGORITHMS: Dict[str, str] = {
     '1': 'vigenere'
 }
 
+UNREADABLE_TABLE: Dict[str, str] = {
+    'ü': 'ue',
+    'ä': 'ae',
+    'ö': 'oe',
+    'ß': 'ss'
+}
+
 # GUI
 ## Main window
 class Application():
@@ -237,7 +244,7 @@ class Application():
                 )
             else:
                 self.encrypted_text_buffer.set_text(
-                    self.__check_readable(self.text_enc)
+                    self.check_readable(self.text_enc)
                 )
         else:
             if hex:
@@ -246,8 +253,79 @@ class Application():
                 )
             else:
                 self.decrypted_text_buffer.set_text(
-                    self.__check_readable(self.text_dec)
+                    self.check_readable(self.text_dec)
                 )
+
+    def get_dec_buffer(self) -> str:
+        """
+        Returns the decrypted text buffer.
+
+        Returns:
+            str: The decrypted text buffer.
+        """
+
+        return self.decrypted_text_buffer.get_text(
+            self.decrypted_text_buffer.get_start_iter(),
+            self.decrypted_text_buffer.get_end_iter(),
+            True
+        )
+    
+    def set_dec_buffer(self, value: str) -> None:
+        """
+        Sets the decrypted text buffer.
+
+        Args:
+            value (str): The value to set the decrypted text buffer to.
+
+        Returns:
+            None
+        """
+
+        self.decrypted_text_buffer.set_text(value)
+
+    def get_enc_buffer(self) -> str:
+        """
+        Returns the encrypted text buffer.
+
+        Returns:
+            str: The encrypted text buffer.
+        """
+
+        return self.encrypted_text_buffer.get_text(
+            self.encrypted_text_buffer.get_start_iter(),
+            self.encrypted_text_buffer.get_end_iter(),
+            True
+        )
+    
+    def set_enc_buffer(self, value: str) -> None:
+        """
+        Sets the encrypted text buffer.
+
+        Args:
+            value (str): The value to set the encrypted text buffer to.
+
+        Returns:
+            None
+        """
+
+        self.encrypted_text_buffer.set_text(value)
+
+    def clean_characters(self):
+        reader, setter = (
+            self.get_dec_buffer, self.set_dec_buffer
+        ) if not self.dec else (
+            self.get_enc_buffer, self.set_enc_buffer
+        )
+
+        for char in reader():
+            if char in UNREADABLE_TABLE:
+                setter(reader().replace(char, UNREADABLE_TABLE[char]))
+            # If char is not in readable table, replace with '?
+            elif char not in string.printable:
+                setter(reader().replace(char, '?'))
+            else:
+                pass
+
 
     def update_input(self, enc: bool=True) -> None:
         """
@@ -262,9 +340,6 @@ class Application():
 
         # Reset keys generator
         self.keys = None
-
-        if self.non_readable:
-            return
 
         if enc:
             self.text_enc = self.encrypted_text_buffer.get_text(
@@ -840,6 +915,8 @@ class Application():
 
         self.keys = None
 
+        self.clean_characters()
+
         # Update input
         self.update_input(self.dec)
 
@@ -849,7 +926,7 @@ class Application():
         # Update the view
         self.update_text_views()
 
-    def __check_readable(self, text: str) -> str:
+    def check_readable(self, text: str) -> str:
         """
         Checks if the text is readable.
 
@@ -862,7 +939,7 @@ class Application():
 
         # Check if there are non-readable characters
         if any(
-            c not in string.printable
+            c not in string.printable or c in UNREADABLE_TABLE
             for c in text
         ):
             return 'Non-readable characters\nLook at the hex view'
