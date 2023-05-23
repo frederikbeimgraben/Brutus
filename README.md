@@ -48,7 +48,7 @@ This program is written for Linus mainly, but should work on Windows and Mac as 
 
 ### Zum Ausführen des Programms / To run the program:
 ```sh
-git clone https://github.com/frederikbeimgraben/Info1-Projekt
+git clone https://github.com/frederikbeimgraben/Brutus
 cd Info1-Projekt
 python src/main.py
 ```
@@ -58,7 +58,7 @@ This will require you to have PyGObject installed.
 
 ### Zur Installation des Programms / To install the program:
 ```sh
-git clone https://github.com/frederikbeimgraben/Info1-Projekt
+git clone https://github.com/frederikbeimgraben/Brutus
 cd Info1-Projekt
 
 make
@@ -70,9 +70,15 @@ sudo make install
   For usage run `python src/encrypt_file.py --help`.
 
 ## Fortschritt / Progress
-- [x] Caesar Chiffre / Caesar Cipher
-- [x] Vigenère Chiffre / Vigenère Cipher
-- [x] Basis UI / Basic UI
-- [ ] Enigma Chiffre / Enigma Cipher
-- [ ] AES Chiffre / AES Cipher
+- [ ] Algorthmen / Algorithms
+  - [x] Caesar Chiffre / Caesar Cipher
+  - [x] Vigenère Chiffre / Vigenère Cipher
+  - [ ] Enigma Chiffre / Enigma Cipher
+  - [ ] AES Chiffre / AES Cipher
+- [ ] UI
+  - [x] Basis UI / Basic UI
+  - [ ] Live-Visualisierung / Live Visualization
+  - [ ] Übersetzungen / Translations
+- [ ] Allgemein
+  - [ ] Besseres Knacken / Better Code Breaking
 - [ ] Es wird noch mehr / There´s more to come
