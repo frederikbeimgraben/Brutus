@@ -11,6 +11,7 @@ Contains:
 """
 
 # Standard imports
+from math import log
 import random
 import string
 from typing import Callable, Dict, Generator, Iterable, List, Sized, SupportsIndex, Optional, Tuple
@@ -36,7 +37,7 @@ def invert_table(table: A) -> Dict[S, int]:
     Inverts an alphabet table.
 
     Args:
-        table (A, optional): The alphabet to invert. Defaults to ALPHABET.
+        table (A, optional): The alphabet to invert. Defaults to alphabet.
 
     Returns:
         A: The inverted alphabet.
@@ -54,7 +55,7 @@ def hash_sequence(text: T | KS | S, table: A) -> int:
 
     Args:
         text (T): The text to hash.
-        table (A, optional): The alphabet to use. Defaults to ALPHABET.
+        table (A, optional): The alphabet to use. Defaults to alphabet.
 
     Returns:
         int: The hashed offset value.
@@ -87,7 +88,7 @@ def shift_symbol(symbol: S, shift: int, table: A) -> S:
     Args:
         symbol (S): The symbol to shift.
         shift (int): The shift value.
-        table (A, optional): The alphabet to use. Defaults to ALPHABET.
+        table (A, optional): The alphabet to use. Defaults to alphabet.
 
     Returns:
         S: The shifted symbol.
@@ -110,7 +111,7 @@ def caesar_shift_sequence(text: T, offset: int, table: A) -> Generator[S, None, 
     Args:
         text (T): The text to shift.
         offset (int): The offset value.
-        table (A, optional): The alphabet to use. Defaults to ALPHABET.
+        table (A, optional): The alphabet to use. Defaults to alphabet.
 
     Returns:
         Generator[S, None, None]: The shifted text.
@@ -129,7 +130,7 @@ def caesar_encrypt_sequence(text: T, key: int, table: A) -> Generator[S, None, N
     Args:
         text (T): The text to encrypt.
         key (int): The key to use.
-        table (A, optional): The alphabet to use. Defaults to ALPHABET.
+        table (A, optional): The alphabet to use. Defaults to alphabet.
 
     Returns:
         Generator[S, None, None]: The encrypted text.
@@ -145,7 +146,7 @@ def caesar_decrypt_sequence(text: T, key: int, table: A) -> Generator[S, None, N
     Args:
         text (T): The text to decrypt.
         key (int): The key to use.
-        table (A, optional): The alphabet to use. Defaults to ALPHABET.
+        table (A, optional): The alphabet to use. Defaults to alphabet.
 
     Returns:
         Generator[S, None, None]: The decrypted text.
@@ -161,7 +162,7 @@ def caesar_encrypt_str(text: str, key: int, table: A) -> str:
     Args:
         text (T): The text to encrypt.
         key (int): The key to use.
-        table (A, optional): The alphabet to use. Defaults to ALPHABET.
+        table (A, optional): The alphabet to use. Defaults to alphabet.
 
     Returns:
         str: The encrypted text.
@@ -179,7 +180,7 @@ def caesar_decrypt_str(text: str, key: int, table: A) -> str:
     Args:
         text (T): The text to decrypt.
         key (int): The key to use.
-        table (A, optional): The alphabet to use. Defaults to ALPHABET.
+        table (A, optional): The alphabet to use. Defaults to alphabet.
 
     Returns:
         str: The decrypted text.
@@ -204,7 +205,7 @@ def vigenere_shift_sequence(
     Args:
         text (T): The text to shift.
         key (T): The key to use.
-        table (A, optional): The alphabet to use. Defaults to ALPHABET.
+        table (A, optional): The alphabet to use. Defaults to alphabet.
 
     Returns:
         Generator[S, None, None]: The shifted text.
@@ -237,7 +238,7 @@ def vigenere_encrypt_sequence(text: T, key: KS, table: A) -> Generator[S, None, 
     Args:
         text (T): The text to shift.
         key (T): The key to use.
-        table (A, optional): The alphabet to use. Defaults to ALPHABET.
+        table (A, optional): The alphabet to use. Defaults to alphabet.
 
     Returns:
         Generator[S, None, None]: The shifted text.
@@ -257,7 +258,7 @@ def vigenere_decrypt_sequence(text: T, key: KS, table: A) -> Generator[S, None, 
     Args:
         text (T): The text to shift.
         key (T): The key to use.
-        table (A, optional): The alphabet to use. Defaults to ALPHABET.
+        table (A, optional): The alphabet to use. Defaults to alphabet.
 
     Returns:
         Generator[S, None, None]: The shifted text.
@@ -278,7 +279,7 @@ def vigenere_encrypt_str(text: str, key: str, table: A) -> str:
     Args:
         text (T): The text to encrypt.
         key (T): The key to use.
-        table (A, optional): The alphabet to use. Defaults to ALPHABET.
+        table (A, optional): The alphabet to use. Defaults to alphabet.
 
     Returns:
         str: The encrypted text.
@@ -289,14 +290,14 @@ def vigenere_encrypt_str(text: str, key: str, table: A) -> str:
         vigenere_encrypt_sequence(text, key, table)
     )
 
-def vigenere_decrypt_str(text: str, key: str, table: A) -> str:
+def vigenere_decrypt_str(text: str, key: str, table: List[str] | str) -> str:
     """
     Decrypts a text using a Vigenere Cipher.
 
     Args:
         text (T): The text to decrypt.
         key (T): The key to use.
-        table (A, optional): The alphabet to use. Defaults to ALPHABET.
+        table (A, optional): The alphabet to use. Defaults to alphabet.
 
     Returns:
         str: The decrypted text.
@@ -306,6 +307,156 @@ def vigenere_decrypt_str(text: str, key: str, table: A) -> str:
         str(symbol) for symbol in
         vigenere_decrypt_sequence(text, key, table)
     )
+
+def vigenere_monogram_freq(
+        text: str,
+        alphabet: str | List[str]) -> Dict[S, float]:
+    """
+    Calculates the monogram frequency of a text.
+
+    Args:
+        text (T): The text to calculate the monogram frequency of.
+        alphabet (A): The alphabet to use.
+
+    Returns:
+        Dict[S, float]: The monogram frequency.
+    """
+
+    return {
+        symbol: text.count(symbol) / len(text)
+        for symbol in alphabet
+    }
+
+def vigenere_tetragram_freq(
+        text: str,
+        alphabet: str | List[str]) -> Dict[S, float]:
+    """
+    Calculates the tetragram frequency of a text.
+
+    Args:
+        text (T): The text to calculate the tetragram frequency of.
+        alphabet (A): The alphabet to use.
+
+    Returns:
+        Dict[S, float]: The tetragram frequency.
+    """
+
+    tetrafrequencies: List[int] = [0] * (len(alphabet)**4)
+    for i in range(len(text) - 3):
+        x: int = (
+            alphabet.index(text[i])*(len(alphabet)**3) +
+            alphabet.index(text[i+1])*(len(alphabet)**2) +
+            alphabet.index(text[i+2])*len(alphabet) +
+            alphabet.index(text[i+3])
+        )
+        tetrafrequencies[x] += 1
+    for i, _ in enumerate(tetrafrequencies):
+        tetrafrequencies[i] = tetrafrequencies[i] / (len(text)-3) # type: ignore
+
+def vigenere_fitness(
+        text: str,
+        alphabet: str | List[str],):
+    
+    result = 0
+
+    tetrafrequencies = vigenere_tetragram_freq(text, alphabet)
+
+    for i in range(len(text)-3):
+        tetragram = text[i:i+4]
+        x = (
+            alphabet.index(tetragram[0])*(len(alphabet)**3) +
+            alphabet.index(tetragram[1])*(len(alphabet)**2) +
+            alphabet.index(tetragram[2])*(len(alphabet)) +
+            alphabet.index(tetragram[3])
+        )
+
+        y = tetrafrequencies[x]
+        if y == 0:
+            result += -15 # some large negative number
+        else:
+            result += log(y)
+    result = result / (len(text) - 3)
+    return result
+
+def index_of_coincidence(
+        text: str,
+        alphabet: str | List[str]) -> float:
+    counts = [0]*len(alphabet)
+    for char in text:
+        counts[alphabet.index(char)] += 1
+    numer = 0
+    total = 0
+    for i, _ in enumerate(alphabet):
+        numer += counts[i]*(counts[i]-1)
+        total += counts[i]
+    return len(alphabet)*numer / (total*(total-1))
+
+def find_period(
+        text: str,
+        alphabet: str | List[str]) -> int:
+    """
+    Finds the period of a text.
+
+    Args:
+        text (str): The text to find the period of.
+        alphabet (str | List[str]): The alphabet to use.
+
+    Returns:
+        int: The period of the text.
+    """
+
+    period: int = 0
+    while True:
+        period += 1
+        slices = ['']*period
+        for i in range(len(text)):
+            slices[i%period] += text[i]
+        sum = 0
+        for i in range(period):
+            sum += index_of_coincidence(
+                slices[i],
+                alphabet
+            )
+        ioc = sum / period
+        if ioc > 1.6:
+            return period
+
+def vigenere_break_vari(
+        text: str,
+        alphabet: str | List[str]) -> Tuple[str, str]:
+    """
+    Breaks a Vigenere Cipher using the Variational Method.
+
+    Args:
+        text (str): The text to break.
+        alphabet (str | List[str]): The alphabet to use.
+
+    Returns:
+        Tuple[str, str]: The key and the decrypted text.
+    """
+
+    period = find_period(text, alphabet)
+
+    key = ['A']*period
+    fit = -99 # some large negative number
+    while fit < -10:
+        print("Trying key: " + "".join(key))
+        K = key[:]
+        x = random.randrange(period)
+        for i, _ in enumerate(alphabet):
+            K[x] = alphabet[i]
+            pt = vigenere_decrypt_str(
+                text,
+                "".join(K),
+                alphabet
+            )
+
+            F = vigenere_fitness(pt, alphabet)
+            if (F > fit):
+                key = K[:]
+                fit = F
+    
+    return ("".join(key), vigenere_decrypt_str(text, "".join(key), alphabet))
 
 
 ### Enigma
@@ -463,39 +614,39 @@ def enigma_decrypt_sequence(
         )
     )
 
-DEFAULT_ALPHABET = string.ascii_letters + string.digits + string.punctuation + ' '
-BYTE_ALPHABET = tuple(i for i in range(256))
+DEFAULT_alphabet = string.ascii_letters + string.digits + string.punctuation + ' '
+BYTE_alphabet = tuple(i for i in range(256))
 
 pseudo_random = random.Random(0)
 
 # Pseudo randomize 5 alphabets
-ALPHABETS = tuple(
-    ''.join(pseudo_random.sample(DEFAULT_ALPHABET, len(DEFAULT_ALPHABET)))
+alphabetS = tuple(
+    ''.join(pseudo_random.sample(DEFAULT_alphabet, len(DEFAULT_alphabet)))
     for _ in range(5)
 )
 
-BYTE_ALPHABETS = tuple(
-    tuple(pseudo_random.sample(BYTE_ALPHABET, len(BYTE_ALPHABET)))
+BYTE_alphabetS = tuple(
+    tuple(pseudo_random.sample(BYTE_alphabet, len(BYTE_alphabet)))
     for _ in range(5)
 )
 
 # Pseudo randomize 5 rotors
 ROTORS = tuple(
     EnigmaRotor(
-        alphabet=DEFAULT_ALPHABET,
+        alphabet=DEFAULT_alphabet,
         position=pseudo_random.randint(0, len(alphabet) - 1),
         mapping=list(alphabet)
     )
-    for alphabet in ALPHABETS
+    for alphabet in alphabetS
 )
 
 BYTE_ROTORS = tuple(
     EnigmaRotor(
-        alphabet=BYTE_ALPHABET,
+        alphabet=BYTE_alphabet,
         position=pseudo_random.randint(0, len(alphabet) - 1),
         mapping=list(alphabet)
     )
-    for alphabet in BYTE_ALPHABETS
+    for alphabet in BYTE_alphabetS
 )
 
 REPLACEMENTS = {
