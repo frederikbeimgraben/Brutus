@@ -11,12 +11,14 @@ Contains:
 """
 
 # Standard imports
-from typing import Callable, Dict, Generator, Iterable, List, Sized, SupportsIndex, Optional
+import random
+import string
+from typing import Callable, Dict, Generator, Iterable, List, Sized, SupportsIndex, Optional, Tuple
 
 # Type Hints  (I just like type hints, okay?)
 S = str | bytes | int
 
-A = List[S]
+A = List[S] | str | Tuple[S]
 
 T = Iterable[S]
 
@@ -306,6 +308,196 @@ def vigenere_decrypt_str(text: str, key: str, table: A) -> str:
     )
 
 
+### Enigma
+class EnigmaRotor(Iterable[S]):
+    alphabet: A
+    position: int
+    init_mapping: List[S]
+
+    def __init__(self, alphabet: A, position: int, mapping: List[S]):
+        self.alphabet = alphabet
+        self.position = position
+        self.init_mapping = mapping
+
+    @property
+    def mapping_list(self) -> List[S]:
+        return self.init_mapping[self.position:] + self.init_mapping[:self.position]
+    
+    @property
+    def mapping(self) -> Dict[S, S]:
+        return dict(zip(self.alphabet, self.mapping_list))
+    
+    @property
+    def reverse_mapping(self) -> Dict[S, S]:
+        return dict(zip(self.mapping_list, self.alphabet))
+
+    def __call__(self, key: S) -> S:
+        """
+        Encrypts a single symbol.
+        """
+
+        if key not in self.mapping:
+           return key
+
+        return self.mapping[key]
+    
+    def __getitem__(self, key: S) -> S:
+        """
+        Decrypts a single symbol.
+        """
+
+        if key not in self.reverse_mapping:
+            return key
+
+        return self.reverse_mapping[key]
+
+    def __repr__(self) -> str:
+        return f"<EnigmaRotor {self.position} {hash(self)}>"
+
+    def __iter__(self) -> Iterable[S]:
+        return self
+    
+    def __next__(self) -> 'EnigmaRotor':
+        self.position = (self.position + 1) % len(self.alphabet)
+        return self
+    
+    def __hash__(self) -> int:
+        return sum(
+            hash(symbol) * (i + 1)
+            for i, symbol in enumerate(self.mapping_list)
+        ) % 2**32
+
+def enigma_encrypt_sequence(
+        text: T,
+        rotors: Tuple[EnigmaRotor, ...],
+        offsets: Tuple[int, ...]) -> Generator[S, None, None]:
+    """
+    Encrypts a text using an Enigma Machine.
+
+    Args:
+        text (T): The text to encrypt.
+        rotors (Tuple[EnigmaRotor, ...]): The rotors to use.
+        offsets (Tuple[int, ...]): The offsets to use.
+
+    Returns:
+        Generator[S, None, None]: The encrypted text.
+            We use a generator here to allow for lazy evaluation of eg. a stream of characters.
+    """
+
+    rotor_a, rotor_b, rotor_c = rotors
+
+    # Copy the rotors
+    rotor_a, rotor_b, rotor_c = (
+        EnigmaRotor(
+            alphabet=rotor.alphabet,
+            position=offset,
+            mapping=rotor.init_mapping
+        ) for rotor, offset in zip(
+            (rotor_a, rotor_b, rotor_c),
+            offsets
+        )
+    )
+
+    return (
+        rotor_c(
+            rotor_b(
+                rotor_a(
+                    symbol
+                )
+            )
+        )
+        for symbol, *_ in zip(
+            text, 
+            rotor_a, 
+            rotor_b, 
+            rotor_c
+        )
+    )
+
+def enigma_decrypt_sequence(
+        text: T,
+        rotors: Tuple[EnigmaRotor, ...],
+        offsets: Tuple[int, ...]) -> Generator[S, None, None]:
+    """
+    Decrypts a text using an Enigma Machine.
+
+    Args:
+        text (T): The text to decrypt.
+        rotors (Tuple[EnigmaRotor, ...]): The rotors to use.
+        offsets (Tuple[int, ...]): The offsets to use.
+
+    Returns:
+        Generator[S, None, None]: The decrypted text.
+
+    Raises:
+        ValueError: If the text contains a symbol not in the alphabet.
+    """
+
+    rotor_a, rotor_b, rotor_c = rotors
+
+    # Copy the rotors
+    rotor_a, rotor_b, rotor_c = (
+        EnigmaRotor(
+            alphabet=rotor.alphabet,
+            position=offset,
+            mapping=rotor.init_mapping
+        ) for rotor, offset in zip(
+            (rotor_a, rotor_b, rotor_c),
+            offsets
+        )
+    )
+
+    return (
+        rotor_a[
+            rotor_b[
+                rotor_c[
+                    symbol
+                ]
+            ]
+        ]
+        for symbol, *_ in zip(
+            text,
+            rotor_a,
+            rotor_b,
+            rotor_c
+        )
+    )
+
+DEFAULT_ALPHABET = string.ascii_letters + string.digits + string.punctuation + ' '
+BYTE_ALPHABET = tuple(i for i in range(256))
+
+pseudo_random = random.Random(0)
+
+# Pseudo randomize 5 alphabets
+ALPHABETS = tuple(
+    ''.join(pseudo_random.sample(DEFAULT_ALPHABET, len(DEFAULT_ALPHABET)))
+    for _ in range(5)
+)
+
+BYTE_ALPHABETS = tuple(
+    tuple(pseudo_random.sample(BYTE_ALPHABET, len(BYTE_ALPHABET)))
+    for _ in range(5)
+)
+
+# Pseudo randomize 5 rotors
+ROTORS = tuple(
+    EnigmaRotor(
+        alphabet=DEFAULT_ALPHABET,
+        position=pseudo_random.randint(0, len(alphabet) - 1),
+        mapping=list(alphabet)
+    )
+    for alphabet in ALPHABETS
+)
+
+BYTE_ROTORS = tuple(
+    EnigmaRotor(
+        alphabet=BYTE_ALPHABET,
+        position=pseudo_random.randint(0, len(alphabet) - 1),
+        mapping=list(alphabet)
+    )
+    for alphabet in BYTE_ALPHABETS
+)
+
 REPLACEMENTS = {
     ' ': '␣',
     '\n': '↵',
@@ -352,8 +544,7 @@ def prettify2(text: str) -> str:
     )
 
 TEST_TEXT = \
-"""Hello World!
-This is a test message.
+"""Hello World! This is a test message.
 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
 et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
 aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse
@@ -364,61 +555,6 @@ culpa qui officia deserunt mollit anim id est laborum.
 0123456789()[]{}<>.,;:?!+-*/=\\|&%$#@^~`"'_
 Wrong\rRight"""
 
-
-def test_alg(alg_enc: Callable, alg_dec: Callable, key: T | int, text: str) -> None:
-    """
-    Tests an algorithm.
-
-    Args:
-        alg (callable): The algorithm to test.
-        key (T | int): The key to use.
-        text (str): The text to encrypt.
-    """
-
-    enc = alg_enc(text, key)
-    dec = alg_dec(enc, key)
-    
-    key_str: str = f"'{key}'" if isinstance(key, str) else str(key)
-
-    print(f"\x1B[32;1mUsing: \x1B[0;1m{alg_enc.__name__}(\x1B[0m...\x1B[1m, \x1B[0m{key_str}\x1B[1m)\x1B[0m")
-
-    text_esc = text.replace('\r', '\\r')
-    dec_esc = dec.replace('\r', '\\r')
-
-    print(
-f"""\x1B[32m==============\x1B[1mORIGINAL\x1B[0;32m=============\x1B[0m
-{text_esc}
-\x1B[32m==============\x1B[1mESCAPED\x1B[0;32m==============\x1B[0m
-{prettify(text)}
-\x1B[32m==============\x1B[1mENCRYPTED\x1B[0;32m============\x1B[0m
-{prettify(enc)}
-\x1B[32m=========\x1B[1mDECRYPTED ESCAPED\x1B[0;32m=========\x1B[0m
-{prettify(dec)}
-\x1B[32m=============\x1B[1mDECRYPTED\x1B[0;32m=============\x1B[0m
-{dec_esc}
-\x1B[32m====================================\x1B[0m
-""")
-
-# Main
-if __name__ == "__main__":
-    # Test Caesar Cipher
-    print("\x1B[32;1mCaesar Cipher:\x1B[0m")
-
-    key_num = 13
-    key_str = "ThisIsAKey"
-
-    test_alg(
-        alg_enc=caesar_encrypt_str,
-        alg_dec=caesar_decrypt_str,
-        key=key_num,
-        text=TEST_TEXT
-    )
-
-    # Test Vigenere Cipher
-    print("\x1B[32;1mVigenere Cipher:\x1B[0m")
-    test_alg(
-        alg_enc=vigenere_encrypt_str,
-        alg_dec=vigenere_decrypt_str,
-        key=key_str,
-        text=TEST_TEXT
-    )
+TEST_TEXT_BYTES = tuple(
+    ord(char) for char in TEST_TEXT
+)

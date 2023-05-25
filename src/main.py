@@ -7,8 +7,9 @@ Use the `ui/main_window.ui` as the UI source file.
 
 # Standard library imports
 import os
+import random
 import string
-from typing import Any, Generator, List, Optional, Dict
+from typing import Any, Generator, List, Optional, Dict, Tuple
 import subprocess
 
 # Get python path site-packages
@@ -37,6 +38,7 @@ from gi.repository import GdkPixbuf # type: ignore
 # Local imports
 from encrypt import caesar_encrypt_sequence, caesar_decrypt_sequence
 from encrypt import vigenere_encrypt_sequence, vigenere_decrypt_sequence
+from encrypt import enigma_decrypt_sequence, enigma_encrypt_sequence, BYTE_ROTORS, EnigmaRotor
 from break_lib import caesar_guess_alphabet, caesar_guess_shift
 
 # Constants
@@ -55,9 +57,24 @@ ALPHABETS: Dict[str, List[int] | None] = {
     '6': None
 }
 
+# Create new rotors for each alphabet
+pseudo_random = random.Random(0)
+ROTORS: Dict[str, List[EnigmaRotor]] = {
+    alphabet_id: [
+        EnigmaRotor(
+            alphabet=alphabet,
+            position=pseudo_random.randint(0, 255),
+            mapping=pseudo_random.sample(alphabet, len(alphabet))
+        ) for _ in range(5)
+    ]
+    for alphabet_id, alphabet in ALPHABETS.items()
+    if alphabet is not None
+}
+
 ALGORITHMS: Dict[str, str] = {
     '0': 'caesar',
-    '1': 'vigenere'
+    '1': 'vigenere',
+    '2': 'enigma'
 }
 
 UNREADABLE_TABLE: Dict[str, str] = {
@@ -66,8 +83,6 @@ UNREADABLE_TABLE: Dict[str, str] = {
     'ö': 'oe',
     'ß': 'ss'
 }
-
-
 
 # GUI
 ## Main window
@@ -115,15 +130,34 @@ class Application():
         return algorithm
     
     @property
-    def key(self) -> str | int:
+    def key(self) -> str | int | Tuple[Tuple[int, ...], Tuple[EnigmaRotor, ...]]:
         if self.algorithm == 'vigenere':
             return self.key_buffer.get_text()
         elif self.algorithm == 'caesar':
             return int(
                 self.caesar_adjustment.get_value()
             )
+        elif self.algorithm == 'enigma':
+            return (
+                (
+                    int(self.enigma_a.get_value()),
+                    int(self.enigma_b.get_value()),
+                    int(self.enigma_c.get_value())
+                ),
+                (
+                    ROTORS[self.alphabet_combo.get_active_id()][
+                        int(self.rotor_a.get_active_id())
+                    ],
+                    ROTORS[self.alphabet_combo.get_active_id()][
+                        int(self.rotor_b.get_active_id())
+                    ],
+                    ROTORS[self.alphabet_combo.get_active_id()][
+                        int(self.rotor_c.get_active_id())
+                    ]
+                )
+            )
         else:
-            raise ValueError(f'Unknown algorithm {self.algorithm}')
+            raise ValueError('Unknown algorithm')
     
     @property
     def dec(self) -> bool:
@@ -433,8 +467,35 @@ class Application():
                     b for b in
                     vigenere_encrypt_sequence(used_data, key_vig, alphabet) # type: ignore
                 )
+        elif algorithm == 'enigma':
+            assert isinstance(
+                self.key, 
+                Tuple
+            )
+
+            # Read out rotor positions
+            offsets, rotors = self.key
+
+            if self.dec:
+                data = bytes(
+                    b for b in
+                    enigma_decrypt_sequence(
+                        text=used_data,
+                        rotors=rotors,
+                        offsets=offsets,
+                    ) # type: ignore
+                )
+            else:
+                data = bytes(
+                    b for b in
+                    enigma_encrypt_sequence(
+                        text=used_data,
+                        rotors=rotors,
+                        offsets=offsets,
+                    ) # type: ignore
+                )
         else:
-            raise ValueError(f'Unknown algorithm: {algorithm}')
+            raise NotImplementedError
 
         text: str = ''.join(
             chr(b) for b in data
@@ -1078,9 +1139,12 @@ class Application():
 
         # Adjustments
         self.caesar_adjustment = self.builder.get_object('caesar_adjustment')
-        self.enigma_a = self.builder.get_object('enigma_a')
+        self.enigma_a = self.builder.get_object('enigma_a') # GtkSpinButton
         self.enigma_b = self.builder.get_object('enigma_b')
         self.enigma_c = self.builder.get_object('enigma_c')
+        self.rotor_a = self.builder.get_object('rotor_a') # GtkComboBoxText
+        self.rotor_b = self.builder.get_object('rotor_b')
+        self.rotor_c = self.builder.get_object('rotor_c')
 
         # Key input
         self.vigenere_key_entry = self.builder.get_object('vigenere_key_entry')
@@ -1098,6 +1162,9 @@ class Application():
             self.enigma_a,
             self.enigma_b,
             self.enigma_c,
+            self.rotor_a,
+            self.rotor_b,
+            self.rotor_c,
             self.vigenere_key_entry,
             self.key_stack,
             self.caesar_key_pane,
@@ -1129,6 +1196,9 @@ class Application():
         self.enigma_a.connect('value-changed', lambda _: self.enigma_adjustment_changed(0))
         self.enigma_b.connect('value-changed', lambda _: self.enigma_adjustment_changed(1))
         self.enigma_c.connect('value-changed', lambda _: self.enigma_adjustment_changed(2))
+        self.rotor_a.connect('changed', lambda _: self.enigma_adjustment_changed(0))
+        self.rotor_b.connect('changed', lambda _: self.enigma_adjustment_changed(1))
+        self.rotor_c.connect('changed', lambda _: self.enigma_adjustment_changed(2))
 
         # Alphabet popover
         self.alphabet_popover_button.connect('clicked', self.alphabet_popover_button_clicked)
@@ -1209,6 +1279,17 @@ class Application():
         Returns:
             None
         """
+
+        # Set max value according to the alphabet
+        for adjustment in [self.enigma_a, self.enigma_b, self.enigma_c]:
+            adjustment.set_upper(len(self.alphabet) - 1)
+
+            # Adjust the value if it's out of bounds
+            if adjustment.get_value() > adjustment.get_upper():
+                adjustment.set_value(adjustment.get_upper())
+
+
+
 
         # Apply algorithm
         self.apply_algorithm(
