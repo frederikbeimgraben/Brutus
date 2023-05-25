@@ -67,6 +67,8 @@ UNREADABLE_TABLE: Dict[str, str] = {
     'ß': 'ss'
 }
 
+
+
 # GUI
 ## Main window
 class Application():
@@ -113,8 +115,15 @@ class Application():
         return algorithm
     
     @property
-    def key(self) -> str:
-        return self.key_entry.get_text()
+    def key(self) -> str | int:
+        if self.algorithm == 'vigenere':
+            return self.key_buffer.get_text()
+        elif self.algorithm == 'caesar':
+            return int(
+                self.caesar_adjustment.get_value()
+            )
+        else:
+            raise ValueError(f'Unknown algorithm {self.algorithm}')
     
     @property
     def dec(self) -> bool:
@@ -153,6 +162,7 @@ class Application():
         self.link_algorithm_actions()
         self.link_detect_actions()
         self.link_copy_actions()
+        self.link_key_popover_actions()
 
         # Load input data
         self.update_input(enc=False)
@@ -362,7 +372,7 @@ class Application():
                 [f'{b:02X}' for b in self.data_dec]
             )
 
-    def apply_algorithm(self, algorithm: str, alphabet: List[int], key: str) -> None:
+    def apply_algorithm(self, algorithm: str, alphabet: List[int], key: str | int) -> None:
         """
         Applies an algorithm to the active data.
 
@@ -407,6 +417,8 @@ class Application():
                     caesar_encrypt_sequence(used_data, int(key), alphabet) # type: ignore
                 )
         elif algorithm == 'vigenere':
+            assert type(key) == str
+
             key_vig: List[int] = [
                 alphabet.index(ord(c)) if ord(c) in alphabet else 0
                 for c in key
@@ -598,12 +610,27 @@ class Application():
         self.alphabet_combo.connect('changed', self.update_alphabet)
         self.custom_alphabet_entry.connect('changed', self.update_alphabet)
         # Key
-        self.key_entry.connect('changed', self.update_key)
+        # self.key_entry.connect('changed', self.update_key)
         # Text (connect to the text view and not the buffer)
         self.decrypted_text_buffer.connect('end_user_action', self.update_text)
         self.encrypted_text_buffer.connect('end_user_action', self.update_text)
         # Direction
         self.direction_switch.connect('state-set', self.update_direction)
+
+    def key_popover_response(self, dialog, response_id):
+        """
+        Callback for the key dialog.
+
+        Args:
+            dialog (Gtk.Dialog): The dialog.
+            response_id (Gtk.ResponseType): The response.
+
+        Returns:
+            None
+        """
+
+        # Hide the dialog
+        dialog.hide()
 
     def link_detect_actions(self) -> None:
         """
@@ -616,7 +643,7 @@ class Application():
         # Alphabet
         self.alphabet_detect_button.connect('clicked', self.detect_alphabet)
         # Key
-        self.key_detect_button.connect('clicked', self.detect_key)
+        # self.key_detect_button.connect('clicked', self.detect_key)
 
     def link_copy_actions(self) -> None:
         """
@@ -765,7 +792,7 @@ class Application():
             self.keys = None
                 
         # Set the key
-        self.key_entry.set_text(str(key))
+        self.key_buffer.set_text(str(key), -1)
 
         # Apply the algorithm
         self.apply_algorithm(self.algorithm, self.alphabet, str(key))
@@ -986,9 +1013,13 @@ class Application():
         self.alphabet_combo = self.builder.get_object('alphabet_combo')
         self.alphabet_entry = self.builder.get_object('alphabet_entry')
         ### Key
-        self.key_entry = self.builder.get_object('key_entry')
+        self.key_buffer = self.builder.get_object('key_buffer')
+        ### Set Key button
+        self.key_popover_button = self.builder.get_object('key_popover_button')
+        ### Key dialog
+        self.key_popover = self.builder.get_object('key_popover')
         ### Detect Buttons (key and alphabet)
-        self.key_detect_button = self.builder.get_object('key_detect_button')
+        # self.key_detect_button = self.builder.get_object('key_detect_button')
         self.alphabet_detect_button = self.builder.get_object('alphabet_detect_button')
         ### Direction Switch
         self.direction_switch = self.builder.get_object('direction_switch')
@@ -1000,8 +1031,9 @@ class Application():
             self.algorithm_entry,
             self.alphabet_combo,
             self.alphabet_entry,
-            self.key_entry,
-            self.key_detect_button,
+            self.key_buffer,
+            self.key_popover_button,
+            self.key_popover,
             self.alphabet_detect_button,
             self.direction_switch
         ], 'Failed to get the controls'
@@ -1058,6 +1090,144 @@ class Application():
             self.copy_enc_button,
             self.clear_dec_button
         ], 'Failed to get the copy buttons'
+
+        # Adjustments
+        self.caesar_adjustment = self.builder.get_object('caesar_adjustment')
+        self.enigma_a = self.builder.get_object('enigma_a')
+        self.enigma_b = self.builder.get_object('enigma_b')
+        self.enigma_c = self.builder.get_object('enigma_c')
+
+        # Key input
+        self.vigenere_key_entry = self.builder.get_object('vigenere_key_entry')
+
+        # Key stack
+        self.key_stack = self.builder.get_object('key_stack')
+
+        # Panes
+        self.caesar_key_pane = self.builder.get_object('caesar_key_pane')
+        self.enigma_key_pane = self.builder.get_object('enigma_key_pane')
+        self.vigenere_key_pane = self.builder.get_object('vigenere_key_pane')
+
+        assert None not in [
+            self.caesar_adjustment,
+            self.enigma_a,
+            self.enigma_b,
+            self.enigma_c,
+            self.vigenere_key_entry,
+            self.key_stack,
+            self.caesar_key_pane,
+            self.enigma_key_pane,
+            self.vigenere_key_pane
+        ], 'Failed to get the adjustments'
+
+    def link_key_popover_actions(self) -> None:
+        # Clicking the popover button opens the popover
+        self.key_popover_button.connect('clicked', self.key_popover_button_clicked)
+
+        # Internal updates
+        ## Key buffer (EntryBuffer)
+        self.key_buffer.connect('deleted-text', self.key_buffer_changed)
+        self.key_buffer.connect('inserted-text', self.key_buffer_changed)
+
+        ## Spin buttons
+        self.caesar_adjustment.connect('value-changed', self.caesar_adjustment_changed)
+        self.enigma_a.connect('value-changed', lambda _: self.enigma_adjustment_changed(0))
+        self.enigma_b.connect('value-changed', lambda _: self.enigma_adjustment_changed(1))
+        self.enigma_c.connect('value-changed', lambda _: self.enigma_adjustment_changed(2))
+
+    def key_buffer_changed(self, *_) -> None:
+        """
+        Callback for the key buffer.
+
+        Args:
+            buffer (Gtk.TextBuffer): The buffer.
+
+        Returns:
+            None
+        """
+
+        # Apply algorithm
+        self.apply_algorithm(
+            self.algorithm,
+            self.alphabet,
+            self.key
+        )
+
+        # Update view
+        self.update_text_views()
+
+    def caesar_adjustment_changed(self, adjustment: Gtk.Adjustment) -> None:
+        """
+        Callback for the Caesar adjustment.
+
+        Args:
+            adjustment (Gtk.Adjustment): The adjustment.
+
+        Returns:
+            None
+        """
+
+        # Set max value according to the alphabet
+        adjustment.set_upper(len(self.alphabet) - 1)
+
+        # Adjust the value if it's out of bounds
+        if adjustment.get_value() > adjustment.get_upper():
+            adjustment.set_value(adjustment.get_upper())
+
+        # Apply algorithm
+        self.apply_algorithm(
+            self.algorithm,
+            self.alphabet,
+            self.key
+        )
+
+        # Update view
+        self.update_text_views()
+
+    def enigma_adjustment_changed(self, rotor: int) -> None:
+        """
+        Callback for the Enigma adjustment.
+
+        Args:
+            rotor (int): The rotor.
+
+        Returns:
+            None
+        """
+
+        # Apply algorithm
+        self.apply_algorithm(
+            self.algorithm,
+            self.alphabet,
+            self.key
+        )
+
+        # Update view
+        self.update_text_views()
+
+    def key_popover_button_clicked(self, button):
+        """
+        Callback for the key popover button.
+
+        Args:
+            button (Gtk.Button): The button.
+
+        Returns:
+            None
+        """
+
+        # Choose the correct popover stack pane
+        if self.algorithm == 'caesar':
+            self.key_stack.set_visible_child(self.caesar_key_pane)
+        elif self.algorithm == 'enigma':
+            self.key_stack.set_visible_child(self.enigma_key_pane)
+        elif self.algorithm == 'vigenere':
+            self.key_stack.set_visible_child(self.vigenere_key_pane)
+        else:
+            raise ValueError('Unknown algorithm')
+
+        # Show the popover
+        self.key_popover.show_all()
 
     def show(self) -> None:
         self.main_window.show_all()
