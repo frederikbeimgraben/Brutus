@@ -290,7 +290,7 @@ Sapien faucibus et molestie ac feugiat. In nulla posuere sollicitudin aliquam ul
     <property name="role">com.frederikbeimgraben.Brutus</property>
     <property name="default-width">1200</property>
     <property name="default-height">800</property>
-    <property name="icon">Icon.png</property>
+    <property name="icon">Brutus.png</property>
     <property name="has-resize-grip">True</property>
     <child>
       <object class="GtkBox">
