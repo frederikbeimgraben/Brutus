@@ -1092,12 +1092,12 @@ Sapien faucibus et molestie ac feugiat. In nulla posuere sollicitudin aliquam ul
         <property name="left-padding">10</property>
         <property name="right-padding">10</property>
         <child>
-          <object class="GtkComboBoxText">
+          <object class="GtkComboBoxText" id="break_combo">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <property name="has-entry">True</property>
             <child internal-child="entry">
-              <object class="GtkEntry">
+              <object class="GtkEntry" id="break_entry">
                 <property name="can-focus">False</property>
                 <property name="placeholder-text" translatable="yes">Key</property>
               </object>

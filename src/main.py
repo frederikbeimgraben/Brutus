@@ -531,6 +531,23 @@ class Application():
         # Update text views
         self.update_text_views()
 
+    def update_all_views(self) -> None:
+        """
+        Updates all the views.
+
+        Returns:
+            None
+        """
+
+        # Apply algorithm
+        self.apply_algorithm(self.algorithm, self.alphabet, self.key) # type: ignore
+
+        [
+            self.update_text_view(enc, hex)
+            for enc in [True, False]
+            for hex in [True, False]
+        ]
+
     def update_text_view(self, enc: bool=True, hex: bool=True) -> None:
         """
         Updates the view of a single text view.
@@ -577,21 +594,13 @@ class Application():
         self.keys = None
 
         if enc:
-            self.text_enc = self.encrypted_text_buffer.get_text(
-                self.encrypted_text_buffer.get_start_iter(),
-                self.encrypted_text_buffer.get_end_iter(),
-                True
-            )
+            self.text_enc = self.get_enc_buffer()
             self.data_enc = self.text_enc.encode()
             hex_enc = ' '.join(
                 [f'{b:02X}' for b in self.data_enc]
             )
         else:
-            self.text_dec = self.decrypted_text_buffer.get_text(
-                self.decrypted_text_buffer.get_start_iter(),
-                self.decrypted_text_buffer.get_end_iter(),
-                True
-            )
+            self.text_dec = self.get_dec_buffer()
             self.data_dec = self.text_dec.encode()
             self.hex_dec = ' '.join(
                 [f'{b:02X}' for b in self.data_dec]
@@ -656,7 +665,6 @@ class Application():
             f.write(data)
 
         print(f'\t\x1B[32;1mSaved to {file_path}\x1B[0m')
-
     
     def open_file_dialog_response(self, dialog, response_id):
         """
@@ -692,15 +700,8 @@ class Application():
             # Load the file
             self.load_file(file_path, enc=is_encrypted)
 
-            # Apply Algorithm
-            self.apply_algorithm(self.algorithm, self.alphabet, self.key)
-
             # Update the views
-            [
-                self.update_text_view(i, j)
-                for i in [True, False]
-                for j in [True, False]
-            ]
+            self.update_all_views()
 
         # Hide the dialog
         dialog.hide()
