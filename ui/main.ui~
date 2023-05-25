@@ -732,11 +732,17 @@ Sapien faucibus et molestie ac feugiat. In nulla posuere sollicitudin aliquam ul
                         <property name="left-padding">5</property>
                         <property name="right-padding">5</property>
                         <child>
-                          <object class="GtkButton" id="break_dialog_button">
-                            <property name="label" translatable="yes">Break</property>
+                          <object class="GtkButton" id="break_popover_button">
                             <property name="visible">True</property>
                             <property name="can-focus">True</property>
                             <property name="receives-default">True</property>
+                            <child>
+                              <object class="GtkImage">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="icon-name">autocorrection</property>
+                              </object>
+                            </child>
                           </object>
                         </child>
                       </object>
@@ -1069,6 +1075,33 @@ Sapien faucibus et molestie ac feugiat. In nulla posuere sollicitudin aliquam ul
             <property name="caps-lock-warning">False</property>
             <property name="primary-icon-stock">gtk-italic</property>
             <property name="placeholder-text" translatable="yes">abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ</property>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+  <object class="GtkPopover" id="break_popover">
+    <property name="can-focus">False</property>
+    <property name="relative-to">break_popover_button</property>
+    <child>
+      <object class="GtkAlignment">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <property name="top-padding">10</property>
+        <property name="bottom-padding">10</property>
+        <property name="left-padding">10</property>
+        <property name="right-padding">10</property>
+        <child>
+          <object class="GtkComboBoxText">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="has-entry">True</property>
+            <child internal-child="entry">
+              <object class="GtkEntry">
+                <property name="can-focus">False</property>
+                <property name="placeholder-text" translatable="yes">Key</property>
+              </object>
+            </child>
           </object>
         </child>
       </object>

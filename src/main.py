@@ -37,7 +37,7 @@ from gi.repository import GdkPixbuf # type: ignore
 
 # Local imports
 from encrypt import caesar_encrypt_sequence, caesar_decrypt_sequence
-from encrypt import vigenere_encrypt_sequence, vigenere_decrypt_sequence
+from encrypt import vigenere_encrypt_sequence, vigenere_decrypt_sequence, vigenere_break_vari
 from encrypt import enigma_decrypt_sequence, enigma_encrypt_sequence, BYTE_ROTORS, EnigmaRotor
 from break_lib import caesar_guess_alphabet, caesar_guess_shift
 
@@ -112,6 +112,10 @@ class Application():
     def alphabet(self) -> List[int]:
         alphabet_id = self.alphabet_combo.get_active_id()
         alphabet = ALPHABETS[alphabet_id]
+
+        if alphabet_id == '6':
+            if self.algorithm == 'enigma':
+                self.algorithm_combo.set_active_id('0')
 
         if alphabet is None:
             # Get custom alphabet
@@ -468,10 +472,12 @@ class Application():
                     vigenere_encrypt_sequence(used_data, key_vig, alphabet) # type: ignore
                 )
         elif algorithm == 'enigma':
-            assert isinstance(
+            if not isinstance(
                 self.key, 
-                Tuple
-            )
+                Tuple):
+                self.alphabet_combo.set_active(0)
+                self.algorithm_combo.set_active(2)
+
 
             # Read out rotor positions
             offsets, rotors = self.key
@@ -1072,6 +1078,11 @@ class Application():
         self.direction_switch = self.builder.get_object('direction_switch')
         ### Custom alphabet entry
         self.custom_alphabet_entry = self.builder.get_object('custom_alphabet_entry')
+        ### Break dialog button
+        self.break_popover_button = self.builder.get_object('break_popover_button')
+        self.break_popover = self.builder.get_object('break_popover')
+        self.break_combo = self.builder.get_object('break_combo')
+        self.break_entry = self.builder.get_object('break_entry')
 
         assert None not in [
             self.algorithm_combo,
@@ -1081,7 +1092,12 @@ class Application():
             self.key_buffer,
             self.key_popover_button,
             self.key_popover,
-            self.direction_switch
+            self.direction_switch,
+            self.break_popover_button,
+            self.custom_alphabet_entry,
+            self.break_popover,
+            self.break_combo,
+            self.break_entry
         ], 'Failed to get the controls'
 
         ## Open/Save File and Mode selection
@@ -1203,6 +1219,78 @@ class Application():
         # Alphabet popover
         self.alphabet_popover_button.connect('clicked', self.alphabet_popover_button_clicked)
 
+        # Break dialog
+        self.break_popover_button.connect('clicked', self.break_popover_button_clicked)
+
+        # Break combo set -> set the key
+        self.break_combo.connect('changed', self.break_combo_changed)
+
+    def break_combo_changed(self, combo: Gtk.ComboBoxText) -> None:
+        """
+        Callback for the break combo.
+
+        Args:
+            combo: The combo.
+
+        Returns:
+            None
+        """
+
+        # Set the key
+        if self.algorithm == 'caesar':
+            self.caesar_adjustment.set_value(int(combo.get_active_text()))
+
+    def break_popover_button_clicked(self, *_) -> None:
+        """
+        Callback for the break popover button.
+
+        Args:
+            _: The button.
+
+        Returns:
+            None
+        """
+
+
+        if not self.dec:
+            # Clear options
+            self.break_combo.remove_all()
+        else:
+            if self.algorithm == 'caesar':
+                keys = list(caesar_guess_shift(
+                    self.text_enc,
+                    'en',
+                    alphabet=''.join(chr(c) for c in self.alphabet),
+                    max_shift=len(self.alphabet)
+                ))
+
+                # Clear options
+                self.break_combo.remove_all()
+
+                # Add options
+                for key in keys[:5]:
+                    self.break_combo.append_text(str(key))
+
+                # Set active
+                self.break_combo.set_active(0)
+            # elif self.algorithm == 'vigenere':
+            #     key = vigenere_break_vari(
+            #         self.text_enc,
+            #         ''.join(chr(c) for c in self.alphabet)
+            #     )
+            #
+            #     # Set the key
+            #     self.vigenere_key_entry.set_text(key)
+            # 
+            #     # Clear options
+            #     self.break_combo.remove_all()
+            # 
+            #     # Add options
+            #     self.break_combo.append_text(key)
+
+        # Show the popover
+        self.break_popover.show_all()
+
     def alphabet_popover_button_clicked(self, *_) -> None:
         """
         Callback for the alphabet popover button.
@@ -1287,9 +1375,6 @@ class Application():
             # Adjust the value if it's out of bounds
             if adjustment.get_value() > adjustment.get_upper():
                 adjustment.set_value(adjustment.get_upper())
-
-
-
 
         # Apply algorithm
         self.apply_algorithm(
