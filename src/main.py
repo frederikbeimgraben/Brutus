@@ -37,9 +37,9 @@ from gi.repository import GdkPixbuf # type: ignore
 
 # Local imports
 from encrypt import caesar_encrypt_sequence, caesar_decrypt_sequence
-from encrypt import vigenere_encrypt_sequence, vigenere_decrypt_sequence, vigenere_break_vari
-from encrypt import enigma_decrypt_sequence, enigma_encrypt_sequence, BYTE_ROTORS, EnigmaRotor
-from break_lib import caesar_guess_alphabet, caesar_guess_shift
+from encrypt import vigenere_encrypt_sequence, vigenere_decrypt_sequence
+from encrypt import enigma_decrypt_sequence, enigma_encrypt_sequence, EnigmaRotor
+from break_lib import caesar_guess_shift
 
 # Constants
 BYTE_ALPHABET: List[int] = [
@@ -59,10 +59,11 @@ ALPHABETS: Dict[str, List[int] | None] = {
 
 # Create new rotors for each alphabet
 pseudo_random = random.Random(0)
+
 ROTORS: Dict[str, List[EnigmaRotor]] = {
     alphabet_id: [
         EnigmaRotor(
-            alphabet=alphabet,
+            alphabet=alphabet, # type: ignore
             position=pseudo_random.randint(0, 255),
             mapping=pseudo_random.sample(alphabet, len(alphabet))
         ) for _ in range(5)
@@ -82,6 +83,123 @@ UNREADABLE_TABLE: Dict[str, str] = {
     'ä': 'ae',
     'ö': 'oe',
     'ß': 'ss'
+}
+
+OBJECTS: Dict[str, Dict] = {
+    'Text Views' : {
+        'Decrypted' : {
+            'decrypted_text_view' : ('GtkTextView', 'text_dec_box'),
+            'decrypted_text_buffer' : ('GtkTextBuffer', 'text_dec')
+        },
+        'Encrypted' : {
+            'encrypted_text_view' : ('GtkTextView', 'text_enc_box'),
+            'encrypted_text_buffer' : ('GtkTextBuffer', 'text_enc')
+        }
+    },
+    'Hex Views' : {
+        'Decrypted' : {
+            'decrypted_hex_view' : ('GtkTextView', 'hex_dec_box'),
+            'decrypted_hex_buffer' : ('GtkTextBuffer', 'hex_dec')
+        },
+        'Encrypted' : {
+            'encrypted_hex_view' : ('GtkTextView', 'hex_enc_box'),
+            'encrypted_hex_buffer' : ('GtkTextBuffer', 'hex_enc')
+        }
+    },
+    'Controls' : {
+        'Direction' : {
+            'direction_switch' : ('GtkSwitch', 'direction_switch')
+        },
+        'Algorithm' : {
+            'algorithm_combo' : ('GtkComboBoxText', 'algorithm_combo'),
+            'algorithm_entry' : ('GtkEntry', 'algorithm_entry')
+        },
+        'Alphabet' : {
+            'alphabet_combo' : ('GtkComboBoxText', 'alphabet_combo'),
+            'alphabet_entry' : ('GtkEntry', 'alphabet_entry')
+        },
+        'Custom Alphabet' : {
+            'alphabet_popover' : ('GtkPopover', 'alphabet_popover'),
+            'alphabet_popover_button' : ('GtkButton', 'alphabet_popover_button'),
+            'custom_alphabet_entry' : ('GtkEntry', 'custom_alphabet_entry'),
+        },
+        'Key' : {
+            'PopOver': {
+                'key_popover' : ('GtkPopover', 'key_popover'),
+                'key_popover_button' : ('GtkButton', 'key_popover_button'),
+                'Algorithms' : {
+                    'Caesar' : {
+                        # Pane
+                        'caesar_key_pane' : ('GtkGrid', 'caesar_key_pane'),
+                        # Spin button
+                        'caesar_input' : ('GtkSpinButton', 'caesar_input'),
+                        'caesar_adjustment' : ('GtkAdjustment', 'caesar_adjustment'),
+                    },
+                    'Vigenere' : {
+                        # Pane
+                        'vigenere_key_pane' : ('GtkGrid', 'vigenere_key_pane'),
+                        # Entry
+                        'vigenere_key_entry' : ('GtkEntry', 'vigenere_key_entry'),
+                        # Buffer
+                        'key_buffer' : ('GtkTextBuffer', 'key_buffer'),
+                    },
+                    'Enigma' : {
+                        # Pane
+                        'enigma_key_pane' : ('GtkGrid', 'enigma_key_pane'),
+                        # Rotors
+                        'rotor_a' : ('GtkEntry', 'rotor_a'),
+                        'rotor_b' : ('GtkEntry', 'rotor_b'),
+                        'rotor_c' : ('GtkEntry', 'rotor_c'),
+                        # Ring settings
+                        'enigma_a' : ('GtkSpinButton', 'enigma_a'),
+                        'enigma_b' : ('GtkSpinButton', 'enigma_b'),
+                        'enigma_c' : ('GtkSpinButton', 'enigma_c'),
+                        # TODO: Plugboard
+                    }
+                },
+                'key_stack' : ('GtkStack', 'key_stack'),
+            }
+        },
+        'Break' : {
+            # Popover
+            'PopOver' : {
+                'break_popover' : ('GtkPopover', 'break_popover'),
+                'break_popover_button' : ('GtkButton', 'break_popover_button'),
+                # Combo
+                'break_combo' : ('GtkComboBoxText', 'break_combo'),
+                # Entry
+                'break_entry' : ('GtkEntry', 'break_entry'),
+            }
+        }
+    },
+    'File Save/Load' : {
+        'Save' : {
+            'save_file_button' : ('GtkButton', 'save_file_button'),
+            'save_file_dialog' : ('GtkFileChooserDialog', 'save_file_dialog'),
+            'save_is_encrypted_combo' : ('GtkComboBoxText', 'save_is_encrypted_combo'),
+            'save_is_encrypted_entry' : ('GtkEntry', 'save_is_encrypted_entry'),
+            'file_name_entry' : ('GtkEntry', 'file_name_entry'),
+            'save_ok_button' : ('GtkButton', 'save_ok_button'),
+            'save_close_button' : ('GtkButton', 'save_close_button'),
+        },
+        'Open' : {
+            'open_file_button' : ('GtkButton', 'open_file_button'),
+            'open_file_dialog' : ('GtkFileChooserDialog', 'open_file_dialog'),
+            'open_is_encrypted_combo' : ('GtkComboBoxText', 'open_is_encrypted_combo'),
+            'open_is_encrypted_entry' : ('GtkEntry', 'open_is_encrypted_entry'),
+            'open_ok_button' : ('GtkButton', 'open_ok_button'),
+            'open_close_button' : ('GtkButton', 'open_close_button'),
+        }
+    },
+    'Misc' : {
+        'Clipboard' : {
+            'copy_dec_button' : ('GtkButton', 'copy_dec_button'),
+            'copy_enc_button' : ('GtkButton', 'copy_enc_button'),
+        },
+        'Reset' : {
+            'clear_dec_button' : ('GtkButton', 'clear_dec_button'),
+        },
+    }
 }
 
 # GUI
@@ -106,6 +224,60 @@ class Application():
 
     # Keys generator
     keys: Optional[Generator[str, None, None]]
+
+    # Annotations
+    decrypted_text_view: Gtk.TextView
+    decrypted_text_buffer: Gtk.TextBuffer
+    encrypted_text_view: Gtk.TextView
+    encrypted_text_buffer: Gtk.TextBuffer
+    decrypted_hex_view: Gtk.TextView
+    decrypted_hex_buffer: Gtk.TextBuffer
+    encrypted_hex_view: Gtk.TextView
+    encrypted_hex_buffer: Gtk.TextBuffer
+    direction_switch: Gtk.Switch
+    algorithm_combo: Gtk.ComboBoxText
+    algorithm_entry: Gtk.Entry
+    alphabet_combo: Gtk.ComboBoxText
+    alphabet_entry: Gtk.Entry
+    alphabet_popover: Gtk.Popover
+    alphabet_popover_button: Gtk.Button
+    custom_alphabet_entry: Gtk.Entry
+    key_popover: Gtk.Popover
+    key_popover_button: Gtk.Button
+    caesar_key_pane: Gtk.Grid
+    caesar_input: Gtk.SpinButton
+    caesar_adjustment: Gtk.Adjustment
+    vigenere_key_pane: Gtk.Grid
+    vigenere_key_entry: Gtk.Entry
+    key_buffer: Gtk.TextBuffer
+    enigma_key_pane: Gtk.Grid
+    rotor_a: Gtk.Entry
+    rotor_b: Gtk.Entry
+    rotor_c: Gtk.Entry
+    enigma_a: Gtk.SpinButton
+    enigma_b: Gtk.SpinButton
+    enigma_c: Gtk.SpinButton
+    key_stack: Gtk.Stack
+    break_popover: Gtk.Popover
+    break_popover_button: Gtk.Button
+    break_combo: Gtk.ComboBoxText
+    break_entry: Gtk.Entry
+    save_file_button: Gtk.Button
+    save_file_dialog: Gtk.FileChooserDialog
+    save_is_encrypted_combo: Gtk.ComboBoxText
+    save_is_encrypted_entry: Gtk.Entry
+    file_name_entry: Gtk.Entry
+    save_ok_button: Gtk.Button
+    save_close_button: Gtk.Button
+    open_file_button: Gtk.Button
+    open_file_dialog: Gtk.FileChooserDialog
+    open_is_encrypted_combo: Gtk.ComboBoxText
+    open_is_encrypted_entry: Gtk.Entry
+    open_ok_button: Gtk.Button
+    open_close_button: Gtk.Button
+    copy_dec_button: Gtk.Button
+    copy_enc_button: Gtk.Button
+    clear_dec_button: Gtk.Button
 
     # Alphabet
     @property
@@ -195,24 +367,237 @@ class Application():
         # Get all the objects we need
         self.get_objects()
 
-        # Link the menus to actions
-        self.link_file_actions()
-        self.link_algorithm_actions()
-        self.link_copy_actions()
-        self.link_popover_actions()
-
         # Load input data
         self.update_input(enc=False)
 
-        # Apply Caesar Cipher to data
-        self.apply_algorithm('caesar', BYTE_ALPHABET, '0')
+        # Link all the actions
+        self.link_all()
 
-        # Update views
-        self.update_text_views()
+        # Apply Caesar Cipher to data
+        self.update_view()
 
         # Link close button to quit
         self.main_window.connect('delete-event', Gtk.main_quit)
 
+    def get_objects(
+            self,
+            objects: Dict | Tuple=OBJECTS,
+            path: List[str] | None=None,
+            registered: List[Tuple] | None=None) -> List[Tuple]:
+        """
+        Gets the objects from the ui (glade) file.
+
+        Returns:
+            None
+        """
+
+        if path is None:
+            path = []
+
+        if registered is None:
+            registered = []
+        
+        builder = self.builder
+
+        ind = '\x1B[35m|\t' * (len(path) - 1)
+
+        if not isinstance(objects, dict):
+            print(
+                f'\x1B[37m[L] {ind}\x1B[35;1m{path[-1]}\x1B[0m : \x1B[34;1m{objects[0]}\x1B[0m'
+            )
+            # Assign property to self
+            setattr(self, path[-1], builder.get_object(objects[1]))
+            # Check if attribute is None
+            if getattr(self, path[-1]) is None:
+                raise AttributeError(f'Could not get object {path[-1]} ({objects[1]}))')
+
+            registered.append(
+                (path[-1], objects[0],)
+            )
+
+            return registered
+        else:
+            if len(path) > 0:
+                print(
+                    f'\x1B[37m[E] {ind}\x1B[35;1m{path[-1]}\x1B[0m'
+                )
+
+            # Get the objects
+            for key, value in objects.items():
+                self.get_objects(value, path + [key], registered)
+
+            return registered
+
+    # Linking
+    def link_all(self) -> None:
+        """
+        Links all the actions to their respective functions.
+
+        Returns:
+            None
+        """
+
+        self.link_file_actions()
+        self.link_misc()
+        self.link_control_actions()
+    
+    def link_control_actions(self) -> None:
+        # Clicking the popover button opens the popover
+        self.key_popover_button.connect('clicked', self.key_popover_button_clicked)
+
+        # Vigenere key buffer
+        self.key_buffer.connect('deleted-text', self.key_buffer_changed)
+        self.key_buffer.connect('inserted-text', self.key_buffer_changed)
+
+        # Spin buttons
+        self.caesar_adjustment.connect('value-changed', self.caesar_adjustment_changed)
+        self.enigma_a.connect('value-changed', lambda _: self.enigma_adjustment_changed(0))
+        self.enigma_b.connect('value-changed', lambda _: self.enigma_adjustment_changed(1))
+        self.enigma_c.connect('value-changed', lambda _: self.enigma_adjustment_changed(2))
+        self.rotor_a.connect('changed', lambda _: self.enigma_adjustment_changed(0))
+        self.rotor_b.connect('changed', lambda _: self.enigma_adjustment_changed(1))
+        self.rotor_c.connect('changed', lambda _: self.enigma_adjustment_changed(2))
+
+        # Alphabet popover
+        self.alphabet_popover_button.connect('clicked', self.alphabet_popover_button_clicked)
+
+        # Break dialog
+        self.break_popover_button.connect('clicked', self.break_popover_button_clicked)
+
+        # Break combo set -> set the key
+        self.break_combo.connect('changed', self.break_combo_changed)
+
+        # Algorithm
+        self.algorithm_combo.connect('changed', self.update_algorithm)
+
+        # Alphabet
+        self.alphabet_combo.connect('changed', self.update_alphabet)
+        self.custom_alphabet_entry.connect('changed', self.update_alphabet)
+
+        # Update text
+        self.decrypted_text_buffer.connect('end_user_action', self.update_text)
+        self.encrypted_text_buffer.connect('end_user_action', self.update_text)
+
+        # Direction
+        self.direction_switch.connect('state-set', self.update_direction)   
+
+    def link_file_actions(self) -> None:
+        """
+        Links the file actions to the callbacks.
+
+        Returns:
+            None
+        """
+
+        # Open File
+        self.open_file_dialog.connect('response', self.open_file_dialog_response)
+        self.open_file_button.connect('clicked', lambda _: self.open_file_dialog.show())
+        ## Buttons
+        self.open_ok_button.connect('clicked', lambda _: self.open_file_dialog_response(self.open_file_dialog, Gtk.ResponseType.OK))
+        self.open_close_button.connect('clicked', lambda _: self.open_file_dialog_response(self.open_file_dialog, Gtk.ResponseType.CANCEL))
+
+        # Save File
+        self.save_file_dialog.connect('response', self.save_file_dialog_response)
+        self.save_file_button.connect('clicked', lambda _: self.save_file_dialog.show())
+        ## Buttons
+        self.save_ok_button.connect('clicked', lambda _: self.save_file_dialog_response(self.save_file_dialog, Gtk.ResponseType.OK))
+        self.save_close_button.connect('clicked', lambda _: self.save_file_dialog_response(self.save_file_dialog, Gtk.ResponseType.CANCEL))
+
+    def link_misc(self) -> None:
+        """
+        Links the copy actions to the callbacks.
+
+        Returns:
+            None
+        """
+
+        # Copy
+        self.copy_dec_button.connect('clicked', self.copy_dec)
+        self.copy_enc_button.connect('clicked', self.copy_enc)
+        self.clear_dec_button.connect('clicked', self.clear_dec)
+
+    # Updaters
+    def update_view(self) -> None:
+        """
+        Updates all the views.
+
+        Returns:
+            None
+        """
+
+        # Apply algorithm
+        self.apply_algorithm(self.algorithm, self.alphabet, self.key) # type: ignore
+
+        # Update text views
+        self.update_text_views()
+
+    def update_text_view(self, enc: bool=True, hex: bool=True) -> None:
+        """
+        Updates the view of a single text view.
+
+        Args:
+            enc (bool, optional): Whether to update the encrypted or decrypted view. Defaults to True.
+            hex (bool, optional): Whether to update the hex or text view. Defaults to True.
+
+        Returns:
+            None
+        """
+
+        if enc:
+            if hex:
+                self.encrypted_hex_buffer.set_text(
+                    self.hex_enc
+                )
+            else:
+                self.encrypted_text_buffer.set_text(
+                    self.check_readable(self.text_enc)
+                )
+        else:
+            if hex:
+                self.decrypted_hex_buffer.set_text(
+                    self.hex_dec
+                )
+            else:
+                self.decrypted_text_buffer.set_text(
+                    self.check_readable(self.text_dec)
+                )
+
+    def update_input(self, enc: bool=True) -> None:
+        """
+        Updates the input data. (pulls from the text views).
+
+        Args:
+            enc (bool, optional): Whether to update the encrypted or decrypted view. Defaults to True.
+
+        Returns:
+            None
+        """
+
+        # Reset keys generator
+        self.keys = None
+
+        if enc:
+            self.text_enc = self.encrypted_text_buffer.get_text(
+                self.encrypted_text_buffer.get_start_iter(),
+                self.encrypted_text_buffer.get_end_iter(),
+                True
+            )
+            self.data_enc = self.text_enc.encode()
+            hex_enc = ' '.join(
+                [f'{b:02X}' for b in self.data_enc]
+            )
+        else:
+            self.text_dec = self.decrypted_text_buffer.get_text(
+                self.decrypted_text_buffer.get_start_iter(),
+                self.decrypted_text_buffer.get_end_iter(),
+                True
+            )
+            self.data_dec = self.text_dec.encode()
+            self.hex_dec = ' '.join(
+                [f'{b:02X}' for b in self.data_dec]
+            )
+
+    # File actions
     def load_file(self, file_path: str, enc: bool=True) -> None:
         """
         Loads a file into the application.
@@ -272,254 +657,7 @@ class Application():
 
         print(f'\t\x1B[32;1mSaved to {file_path}\x1B[0m')
 
-    def update_view(self, enc: bool=True, hex: bool=True) -> None:
-        """
-        Updates the view of a single text view.
-
-        Args:
-            enc (bool, optional): Whether to update the encrypted or decrypted view. Defaults to True.
-            hex (bool, optional): Whether to update the hex or text view. Defaults to True.
-
-        Returns:
-            None
-        """
-
-        if enc:
-            if hex:
-                self.encrypted_hex_buffer.set_text(
-                    self.hex_enc
-                )
-            else:
-                self.encrypted_text_buffer.set_text(
-                    self.check_readable(self.text_enc)
-                )
-        else:
-            if hex:
-                self.decrypted_hex_buffer.set_text(
-                    self.hex_dec
-                )
-            else:
-                self.decrypted_text_buffer.set_text(
-                    self.check_readable(self.text_dec)
-                )
-
-    def get_dec_buffer(self) -> str:
-        """
-        Returns the decrypted text buffer.
-
-        Returns:
-            str: The decrypted text buffer.
-        """
-
-        return self.decrypted_text_buffer.get_text(
-            self.decrypted_text_buffer.get_start_iter(),
-            self.decrypted_text_buffer.get_end_iter(),
-            True
-        )
     
-    def set_dec_buffer(self, value: str) -> None:
-        """
-        Sets the decrypted text buffer.
-
-        Args:
-            value (str): The value to set the decrypted text buffer to.
-
-        Returns:
-            None
-        """
-
-        self.decrypted_text_buffer.set_text(value)
-
-    def get_enc_buffer(self) -> str:
-        """
-        Returns the encrypted text buffer.
-
-        Returns:
-            str: The encrypted text buffer.
-        """
-
-        return self.encrypted_text_buffer.get_text(
-            self.encrypted_text_buffer.get_start_iter(),
-            self.encrypted_text_buffer.get_end_iter(),
-            True
-        )
-    
-    def set_enc_buffer(self, value: str) -> None:
-        """
-        Sets the encrypted text buffer.
-
-        Args:
-            value (str): The value to set the encrypted text buffer to.
-
-        Returns:
-            None
-        """
-
-        self.encrypted_text_buffer.set_text(value)
-
-    def clean_characters(self):
-        reader, setter = (
-            self.get_dec_buffer, self.set_dec_buffer
-        ) if not self.dec else (
-            self.get_enc_buffer, self.set_enc_buffer
-        )
-
-        for char in reader():
-            if char in UNREADABLE_TABLE:
-                setter(reader().replace(char, UNREADABLE_TABLE[char]))
-            # If char is not in readable table, replace with '?
-            elif char not in string.printable:
-                setter(reader().replace(char, '?'))
-            else:
-                pass
-
-
-    def update_input(self, enc: bool=True) -> None:
-        """
-        Updates the input data. (pulls from the text views).
-
-        Args:
-            enc (bool, optional): Whether to update the encrypted or decrypted view. Defaults to True.
-
-        Returns:
-            None
-        """
-
-        # Reset keys generator
-        self.keys = None
-
-        if enc:
-            self.text_enc = self.encrypted_text_buffer.get_text(
-                self.encrypted_text_buffer.get_start_iter(),
-                self.encrypted_text_buffer.get_end_iter(),
-                True
-            )
-            self.data_enc = self.text_enc.encode()
-            hex_enc = ' '.join(
-                [f'{b:02X}' for b in self.data_enc]
-            )
-        else:
-            self.text_dec = self.decrypted_text_buffer.get_text(
-                self.decrypted_text_buffer.get_start_iter(),
-                self.decrypted_text_buffer.get_end_iter(),
-                True
-            )
-            self.data_dec = self.text_dec.encode()
-            self.hex_dec = ' '.join(
-                [f'{b:02X}' for b in self.data_dec]
-            )
-
-    def apply_algorithm(self, algorithm: str, alphabet: List[int], key: str | int) -> None:
-        """
-        Applies an algorithm to the active data.
-
-        Args:
-            algorithm (str): The algorithm to apply.
-            alphabet (List[int]): The alphabet to use.
-            key (str): The key to use.
-
-        Returns:
-            None
-        """
-
-        if self.dec:
-            data: bytes = self.data_enc
-        else:
-            data: bytes = self.data_dec
-
-        used_data: List[int] = [
-            b for b in data
-        ]
-
-        if key == '':
-            if algorithm == 'caesar':
-                key = '0'
-            elif algorithm == 'vigenere':
-                key = chr(alphabet[0])
-
-        if algorithm == 'caesar':
-            try:
-                int(key)
-            except ValueError:
-                return
-            
-            if self.dec:
-                data = bytes(
-                    b for b in
-                    caesar_decrypt_sequence(used_data, int(key), alphabet) # type: ignore
-                )
-            else:
-                data = bytes(
-                    b for b in
-                    caesar_encrypt_sequence(used_data, int(key), alphabet) # type: ignore
-                )
-        elif algorithm == 'vigenere':
-            assert type(key) == str
-
-            key_vig: List[int] = [
-                alphabet.index(ord(c)) if ord(c) in alphabet else 0
-                for c in key
-            ]
-
-            if self.dec:
-                data = bytes(
-                    b for b in
-                    vigenere_decrypt_sequence(used_data, key_vig, alphabet) # type: ignore
-                )
-            else:
-                data = bytes(
-                    b for b in
-                    vigenere_encrypt_sequence(used_data, key_vig, alphabet) # type: ignore
-                )
-        elif algorithm == 'enigma':
-            if not isinstance(
-                self.key, 
-                Tuple):
-                self.alphabet_combo.set_active(0)
-                self.algorithm_combo.set_active(2)
-
-
-            # Read out rotor positions
-            offsets, rotors = self.key
-
-            if self.dec:
-                data = bytes(
-                    b for b in
-                    enigma_decrypt_sequence(
-                        text=used_data,
-                        rotors=rotors,
-                        offsets=offsets,
-                    ) # type: ignore
-                )
-            else:
-                data = bytes(
-                    b for b in
-                    enigma_encrypt_sequence(
-                        text=used_data,
-                        rotors=rotors,
-                        offsets=offsets,
-                    ) # type: ignore
-                )
-        else:
-            raise NotImplementedError
-
-        text: str = ''.join(
-            chr(b) for b in data
-        )
-        data: bytes = data
-        hex: str = ' '.join(
-            [f'{b:02X}' for b in data]
-        )
-
-        if self.dec:
-            self.text_dec = text
-            self.data_dec = data
-            self.hex_dec = hex
-        else:
-            self.text_enc = text
-            self.data_enc = data
-            self.hex_enc = hex
-
     def open_file_dialog_response(self, dialog, response_id):
         """
         Callback for the open file dialog.
@@ -559,7 +697,7 @@ class Application():
 
             # Update the views
             [
-                self.update_view(i, j)
+                self.update_text_view(i, j)
                 for i in [True, False]
                 for j in [True, False]
             ]
@@ -631,58 +769,191 @@ class Application():
         # Hide the dialog
         dialog.hide()
 
-    def link_file_actions(self) -> None:
+    # Buffer getters and setters
+    def get_dec_buffer(self) -> str:
         """
-        Links the file actions to the callbacks.
+        Returns the decrypted text buffer.
+
+        Returns:
+            str: The decrypted text buffer.
+        """
+
+        return self.decrypted_text_buffer.get_text(
+            self.decrypted_text_buffer.get_start_iter(),
+            self.decrypted_text_buffer.get_end_iter(),
+            True
+        )
+    
+    def set_dec_buffer(self, value: str) -> None:
+        """
+        Sets the decrypted text buffer.
+
+        Args:
+            value (str): The value to set the decrypted text buffer to.
 
         Returns:
             None
         """
 
-        # Open File
-        self.open_file_dialog.connect('response', self.open_file_dialog_response)
-        self.open_file_button.connect('clicked', lambda _: self.open_file_dialog.show())
-        ## Buttons
-        self.open_ok_button.connect('clicked', lambda _: self.open_file_dialog_response(self.open_file_dialog, Gtk.ResponseType.OK))
-        self.open_close_button.connect('clicked', lambda _: self.open_file_dialog_response(self.open_file_dialog, Gtk.ResponseType.CANCEL))
+        self.decrypted_text_buffer.set_text(value)
 
-        # Save File
-        self.save_file_dialog.connect('response', self.save_file_dialog_response)
-        self.save_file_button.connect('clicked', lambda _: self.save_file_dialog.show())
-        ## Buttons
-        self.save_ok_button.connect('clicked', lambda _: self.save_file_dialog_response(self.save_file_dialog, Gtk.ResponseType.OK))
-        self.save_close_button.connect('clicked', lambda _: self.save_file_dialog_response(self.save_file_dialog, Gtk.ResponseType.CANCEL))
-
-    def link_algorithm_actions(self) -> None:
+    def get_enc_buffer(self) -> str:
         """
-        Links the algorithm actions to the callbacks.
+        Returns the encrypted text buffer.
 
-        The Algorithm should be applied upon:
-            - Changing the algorithm
-            - Changing the alphabet
-            - Changing the key
-            - Changing the text
+        Returns:
+            str: The encrypted text buffer.
+        """
 
-        The algorithm should be applied based on:
-            - Direction button
+        return self.encrypted_text_buffer.get_text(
+            self.encrypted_text_buffer.get_start_iter(),
+            self.encrypted_text_buffer.get_end_iter(),
+            True
+        )
+    
+    def set_enc_buffer(self, value: str) -> None:
+        """
+        Sets the encrypted text buffer.
+
+        Args:
+            value (str): The value to set the encrypted text buffer to.
 
         Returns:
             None
         """
 
-        # Algorithm
-        self.algorithm_combo.connect('changed', self.update_algorithm)
-        # Alphabet
-        self.alphabet_combo.connect('changed', self.update_alphabet)
-        self.custom_alphabet_entry.connect('changed', self.update_alphabet)
-        # Key
-        # self.key_entry.connect('changed', self.update_key)
-        # Text (connect to the text view and not the buffer)
-        self.decrypted_text_buffer.connect('end_user_action', self.update_text)
-        self.encrypted_text_buffer.connect('end_user_action', self.update_text)
-        # Direction
-        self.direction_switch.connect('state-set', self.update_direction)
+        self.encrypted_text_buffer.set_text(value)
 
+    # Algorithm actions
+    def clean_characters(self):
+        reader, setter = (
+            self.get_dec_buffer, self.set_dec_buffer
+        ) if not self.dec else (
+            self.get_enc_buffer, self.set_enc_buffer
+        )
+
+        for char in reader():
+            if char in UNREADABLE_TABLE:
+                setter(reader().replace(char, UNREADABLE_TABLE[char]))
+            # If char is not in readable table, replace with '?
+            elif char not in string.printable:
+                setter(reader().replace(char, '?'))
+            else:
+                pass
+
+    def apply_algorithm(
+            self, 
+            algorithm: str, 
+            alphabet: List[int], 
+            key: str | int | Tuple[Tuple[int, ...], Tuple[EnigmaRotor, ...]]) -> None:
+        """
+        Applies an algorithm to the active data.
+
+        Args:
+            algorithm (str): The algorithm to apply.
+            alphabet (List[int]): The alphabet to use.
+            key (str): The key to use.
+
+        Returns:
+            None
+        """
+
+        if self.dec:
+            data: bytes = self.data_enc
+        else:
+            data: bytes = self.data_dec
+
+        used_data: List[int] = [
+            b for b in data
+        ]
+
+        if key == '':
+            if algorithm == 'caesar':
+                key = '0'
+            elif algorithm == 'vigenere':
+                key = chr(alphabet[0])
+
+        if algorithm == 'caesar':
+            assert type(key) == str or type(key) == int
+
+            try:
+                int(key)
+            except ValueError:
+                return
+            
+            if self.dec:
+                data = bytes(
+                    b for b in
+                    caesar_decrypt_sequence(used_data, int(key), alphabet) # type: ignore
+                )
+            else:
+                data = bytes(
+                    b for b in
+                    caesar_encrypt_sequence(used_data, int(key), alphabet) # type: ignore
+                )
+        elif algorithm == 'vigenere':
+            assert type(key) == str
+
+            key_vig: List[int] = [
+                alphabet.index(ord(c)) if ord(c) in alphabet else 0
+                for c in key
+            ]
+
+            if self.dec:
+                data = bytes(
+                    b for b in
+                    vigenere_decrypt_sequence(used_data, key_vig, alphabet) # type: ignore
+                )
+            else:
+                data = bytes(
+                    b for b in
+                    vigenere_encrypt_sequence(used_data, key_vig, alphabet) # type: ignore
+                )
+        elif algorithm == 'enigma':
+            assert type(key) == tuple
+
+            # Read out rotor positions
+            offsets, rotors = key
+
+            if self.dec:
+                data = bytes(
+                    b for b in
+                    enigma_decrypt_sequence(
+                        text=used_data,
+                        rotors=rotors,
+                        offsets=offsets,
+                    ) # type: ignore
+                )
+            else:
+                data = bytes(
+                    b for b in
+                    enigma_encrypt_sequence(
+                        text=used_data,
+                        rotors=rotors,
+                        offsets=offsets,
+                    ) # type: ignore
+                )
+        else:
+            raise NotImplementedError
+
+        text: str = ''.join(
+            chr(b) for b in data
+        )
+        data: bytes = data
+        hex: str = ' '.join(
+            [f'{b:02X}' for b in data]
+        )
+
+        if self.dec:
+            self.text_dec = text
+            self.data_dec = data
+            self.hex_dec = hex
+        else:
+            self.text_enc = text
+            self.data_enc = data
+            self.hex_enc = hex
+
+    # Response callbacks
     def key_popover_response(self, dialog, response_id):
         """
         Callback for the key dialog.
@@ -697,69 +968,6 @@ class Application():
 
         # Hide the dialog
         dialog.hide()
-
-    def link_copy_actions(self) -> None:
-        """
-        Links the copy actions to the callbacks.
-
-        Returns:
-            None
-        """
-
-        # Copy
-        self.copy_dec_button.connect('clicked', self.copy_dec)
-        self.copy_enc_button.connect('clicked', self.copy_enc)
-        self.clear_dec_button.connect('clicked', self.clear_dec)
-
-    def copy_dec(self, button: Gtk.Button) -> None:
-        """
-        Callback for the copy decrypted button.
-
-        Args:
-            button (Gtk.Button): The button.
-
-        Returns:
-            None
-        """
-
-        self.copy(self.decrypted_text_buffer)
-
-    def copy_enc(self, button: Gtk.Button) -> None:
-        """
-        Callback for the copy encrypted button.
-
-        Args:
-            button (Gtk.Button): The button.
-
-        Returns:
-            None
-        """
-
-        self.copy(self.encrypted_text_buffer)
-
-    def copy(self, buffer: Gtk.TextBuffer) -> None:
-        """
-        Copies the text from the buffer to the clipboard.
-
-        Args:
-            buffer (Gtk.TextBuffer): The buffer.
-
-        Returns:
-            None
-        """
-
-        # Get the clipboard
-        clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
-
-        # Get the text
-        text = buffer.get_text(
-            buffer.get_start_iter(),
-            buffer.get_end_iter(),
-            True
-        )
-
-        # Set the clipboard text
-        clipboard.set_text(text, -1)
 
     def clear_dec(self, button: Gtk.Button) -> None:
         """
@@ -781,77 +989,7 @@ class Application():
         self.decrypted_text_buffer.set_text('')
 
         # Update the other text views
-        self.apply_algorithm(self.algorithm, self.alphabet, self.key)
-        self.update_text_views()
-
-    def detect_alphabet(self, button: Gtk.Button) -> None:
-        """
-        Callback for the detect alphabet button.
-
-        Args:
-            button (Gtk.Button): The button.
-
-        Returns:
-            None
-        """
-
-        if self.algorithm != 'caesar':
-            return
-
-        # Get the text
-        text = self.text_enc if self.dec else self.text_dec
-
-        # Detect the alphabet
-        alphabet: str = caesar_guess_alphabet(text)
-
-        # Set alphabet combo to 'Custom' (id: 5)
-        self.alphabet_combo.set_active_id(alphabet)
-
-    def detect_key(self, button: Gtk.Button) -> None:
-        """
-        Callback for the detect key button.
-
-        Args:
-            button (Gtk.Button): The button.
-
-        Returns:
-            None
-        """
-
-
-        if self.algorithm != 'caesar':
-            return
-        if not self.dec:
-            return
-        
-        if self.keys is None:
-            # Get the text
-            text: str = self.text_enc if self.dec else self.text_dec
-
-            # Detect the key
-            self.keys = caesar_guess_shift(
-                text=text,
-                lang='en',
-                min_shift=0,
-                max_shift=255,
-                alphabet=[
-                    chr(i) for i in self.alphabet
-                ]
-            ) # type: ignore
-        
-        key: int = next(self.keys, 0) # type: ignore
-
-        if key == 0:
-            self.keys = None
-                
-        # Set the key
-        self.key_buffer.set_text(str(key), -1)
-
-        # Apply the algorithm
-        self.apply_algorithm(self.algorithm, self.alphabet, str(key))
-
-        # Update the view
-        self.update_text_views()
+        self.update_view()
 
     def update_direction(self, switch: Gtk.Switch, state: bool) -> None:
         """
@@ -876,9 +1014,9 @@ class Application():
             None
         """
 
-        self.update_view(not self.dec, False)
-        self.update_view(not self.dec, True)
-        self.update_view(self.dec, True)
+        self.update_text_view(not self.dec, False)
+        self.update_text_view(not self.dec, True)
+        self.update_text_view(self.dec, True)
 
         # Set non active text view to non editable and active to editable
         self.decrypted_text_view.set_editable(not self.dec)
@@ -932,11 +1070,7 @@ class Application():
 
         self.keys = None
 
-        # Apply the algorithm
-        self.apply_algorithm(self.algorithm, self.alphabet, self.key)
-
-        # Update the view
-        self.update_text_views()
+        self.update_view()
 
     def update_alphabet(self, combo: Gtk.ComboBox) -> None:
         """
@@ -954,11 +1088,7 @@ class Application():
         # Get the alphabet
         alphabet: List[int] = self.alphabet
 
-        # Apply the algorithm
-        self.apply_algorithm(self.algorithm, alphabet, self.key)
-
-        # Update the view
-        self.update_text_views()
+        self.update_view()
 
     def update_key(self, entry: Gtk.Entry) -> None:
         """
@@ -976,11 +1106,7 @@ class Application():
         # Get the key
         key: str = entry.get_text()
 
-        # Apply the algorithm
-        self.apply_algorithm(self.algorithm, self.alphabet, key)
-
-        # Update the view
-        self.update_text_views()
+        self.update_view()
 
     def update_text(self, buffer: Gtk.TextBuffer) -> None:
         """
@@ -1000,231 +1126,8 @@ class Application():
         # Update input
         self.update_input(self.dec)
 
-        # Apply the algorithm
-        self.apply_algorithm(self.algorithm, self.alphabet, self.key)
-
-        # Update the view
-        self.update_text_views()
-
-    def check_readable(self, text: str) -> str:
-        """
-        Checks if the text is readable.
-
-        Args:
-            text (str): The text.
-
-        Returns:
-            str: The text if it is readable, otherwise an error message.
-        """
-
-        # Check if there are non-readable characters
-        if any(
-            c not in string.printable or c in UNREADABLE_TABLE
-            for c in text
-        ):
-            return 'Non-readable characters\nLook at the hex view'
-        
-        # Return the text
-        return text
-
-    def get_objects(self) -> None:
-        """
-        Gets the objects from the ui (glade) file.
-
-        Returns:
-            None
-        """
-
-        # Get the objects
-        ## Decrypted text view
-        self.decrypted_text_view = self.builder.get_object('text_dec_box')
-        self.decrypted_text_buffer = self.builder.get_object('text_dec')
-        self.decrypted_hex_view = self.builder.get_object('hex_dec_box')
-        self.decrypted_hex_buffer = self.builder.get_object('hex_dec')
-        ## Encrypted text view
-        self.encrypted_text_view = self.builder.get_object('text_enc_box')
-        self.encrypted_text_buffer = self.builder.get_object('text_enc')
-        self.encrypted_hex_view = self.builder.get_object('hex_enc_box')
-        self.encrypted_hex_buffer = self.builder.get_object('hex_enc')
-
-        assert None not in [
-            self.decrypted_text_view,
-            self.decrypted_text_buffer,
-            self.decrypted_hex_view,
-            self.decrypted_hex_buffer,
-            self.encrypted_text_view,
-            self.encrypted_text_buffer,
-            self.encrypted_hex_view,
-            self.encrypted_hex_buffer
-        ], 'Failed to get the text views'
-
-        ## Controls
-        ### Algorithm
-        self.algorithm_combo = self.builder.get_object('algorithm_combo')
-        self.algorithm_entry = self.builder.get_object('algorithm_entry')
-        ### Alphabet
-        self.alphabet_combo = self.builder.get_object('alphabet_combo')
-        self.alphabet_entry = self.builder.get_object('alphabet_entry')
-        ### Key
-        self.key_buffer = self.builder.get_object('key_buffer')
-        ### Set Key button
-        self.key_popover_button = self.builder.get_object('key_popover_button')
-        ### Key dialog
-        self.key_popover = self.builder.get_object('key_popover')
-        ### Detect Buttons (key and alphabet)
-        # self.key_detect_button = self.builder.get_object('key_detect_button')
-        # self.alphabet_detect_button = self.builder.get_object('alphabet_detect_button')
-        ### Direction Switch
-        self.direction_switch = self.builder.get_object('direction_switch')
-        ### Custom alphabet entry
-        self.custom_alphabet_entry = self.builder.get_object('custom_alphabet_entry')
-        ### Break dialog button
-        self.break_popover_button = self.builder.get_object('break_popover_button')
-        self.break_popover = self.builder.get_object('break_popover')
-        self.break_combo = self.builder.get_object('break_combo')
-        self.break_entry = self.builder.get_object('break_entry')
-
-        assert None not in [
-            self.algorithm_combo,
-            self.algorithm_entry,
-            self.alphabet_combo,
-            self.alphabet_entry,
-            self.key_buffer,
-            self.key_popover_button,
-            self.key_popover,
-            self.direction_switch,
-            self.break_popover_button,
-            self.custom_alphabet_entry,
-            self.break_popover,
-            self.break_combo,
-            self.break_entry
-        ], 'Failed to get the controls'
-
-        ## Open/Save File and Mode selection
-        ### Open File
-        self.open_file_button = self.builder.get_object('open_file_button')
-        self.open_file_dialog = self.builder.get_object('open_file_dialog')
-        #### Mode Selection
-        self.open_is_encrypted_combo = self.builder.get_object('open_is_encrypted_combo')
-        self.open_is_encrypted_entry = self.builder.get_object('open_is_encrypted_entry')
-        #### Actions
-        self.open_file_selector_action = self.builder.get_object('open_file_save_action')
-        #### Buttons
-        self.open_ok_button = self.builder.get_object('open_ok_button')
-        self.open_close_button = self.builder.get_object('open_close_button')
-        ### Save File
-        self.save_file_button = self.builder.get_object('save_file_button')
-        self.save_file_dialog = self.builder.get_object('save_file_dialog')
-        #### Mode Selection
-        self.save_is_encrypted_combo = self.builder.get_object('save_is_encrypted_combo')
-        self.save_is_encrypted_entry = self.builder.get_object('save_is_encrypted_entry')
-        ### File Name Entry
-        self.file_name_entry = self.builder.get_object('file_name_entry')
-        #### Actions
-        self.open_file_save_action = self.builder.get_object('open_file_save_action')
-        #### Buttons
-        self.save_ok_button = self.builder.get_object('save_ok_button')
-        self.save_close_button = self.builder.get_object('save_close_button')
-
-        assert None not in [
-            self.open_file_button,
-            self.open_file_dialog,
-            self.open_is_encrypted_combo,
-            self.open_is_encrypted_entry,
-            self.open_file_selector_action,
-            self.open_ok_button,
-            self.save_file_button,
-            self.save_file_dialog,
-            self.save_is_encrypted_combo,
-            self.save_is_encrypted_entry,
-            self.open_file_save_action,
-            self.save_ok_button,
-            self.file_name_entry
-        ], 'Failed to get the file controls'
-
-        ## Copy Buttons
-        self.copy_dec_button = self.builder.get_object('copy_dec_button')
-        self.copy_enc_button = self.builder.get_object('copy_enc_button')
-        self.clear_dec_button = self.builder.get_object('clear_dec_button')
-
-        assert None not in [
-            self.copy_dec_button,
-            self.copy_enc_button,
-            self.clear_dec_button
-        ], 'Failed to get the copy buttons'
-
-        # Adjustments
-        self.caesar_adjustment = self.builder.get_object('caesar_adjustment')
-        self.enigma_a = self.builder.get_object('enigma_a') # GtkSpinButton
-        self.enigma_b = self.builder.get_object('enigma_b')
-        self.enigma_c = self.builder.get_object('enigma_c')
-        self.rotor_a = self.builder.get_object('rotor_a') # GtkComboBoxText
-        self.rotor_b = self.builder.get_object('rotor_b')
-        self.rotor_c = self.builder.get_object('rotor_c')
-
-        # Key input
-        self.vigenere_key_entry = self.builder.get_object('vigenere_key_entry')
-
-        # Key stack
-        self.key_stack = self.builder.get_object('key_stack')
-
-        # Panes
-        self.caesar_key_pane = self.builder.get_object('caesar_key_pane')
-        self.enigma_key_pane = self.builder.get_object('enigma_key_pane')
-        self.vigenere_key_pane = self.builder.get_object('vigenere_key_pane')
-
-        assert None not in [
-            self.caesar_adjustment,
-            self.enigma_a,
-            self.enigma_b,
-            self.enigma_c,
-            self.rotor_a,
-            self.rotor_b,
-            self.rotor_c,
-            self.vigenere_key_entry,
-            self.key_stack,
-            self.caesar_key_pane,
-            self.enigma_key_pane,
-            self.vigenere_key_pane
-        ], 'Failed to get the adjustments'
-
-        # Alphabet popover
-        self.alphabet_popover = self.builder.get_object('alphabet_popover')
-        ## Button
-        self.alphabet_popover_button = self.builder.get_object('alphabet_popover_button')
-
-        assert None not in [
-            self.alphabet_popover,
-            self.alphabet_popover_button
-        ], 'Failed to get the alphabet popover'
-
-    def link_popover_actions(self) -> None:
-        # Clicking the popover button opens the popover
-        self.key_popover_button.connect('clicked', self.key_popover_button_clicked)
-
-        # Internal updates
-        ## Key buffer (EntryBuffer)
-        self.key_buffer.connect('deleted-text', self.key_buffer_changed)
-        self.key_buffer.connect('inserted-text', self.key_buffer_changed)
-
-        ## Spin buttons
-        self.caesar_adjustment.connect('value-changed', self.caesar_adjustment_changed)
-        self.enigma_a.connect('value-changed', lambda _: self.enigma_adjustment_changed(0))
-        self.enigma_b.connect('value-changed', lambda _: self.enigma_adjustment_changed(1))
-        self.enigma_c.connect('value-changed', lambda _: self.enigma_adjustment_changed(2))
-        self.rotor_a.connect('changed', lambda _: self.enigma_adjustment_changed(0))
-        self.rotor_b.connect('changed', lambda _: self.enigma_adjustment_changed(1))
-        self.rotor_c.connect('changed', lambda _: self.enigma_adjustment_changed(2))
-
-        # Alphabet popover
-        self.alphabet_popover_button.connect('clicked', self.alphabet_popover_button_clicked)
-
-        # Break dialog
-        self.break_popover_button.connect('clicked', self.break_popover_button_clicked)
-
-        # Break combo set -> set the key
-        self.break_combo.connect('changed', self.break_combo_changed)
-
+        self.update_view()
+    
     def break_combo_changed(self, combo: Gtk.ComboBoxText) -> None:
         """
         Callback for the break combo.
@@ -1273,20 +1176,6 @@ class Application():
 
                 # Set active
                 self.break_combo.set_active(0)
-            # elif self.algorithm == 'vigenere':
-            #     key = vigenere_break_vari(
-            #         self.text_enc,
-            #         ''.join(chr(c) for c in self.alphabet)
-            #     )
-            #
-            #     # Set the key
-            #     self.vigenere_key_entry.set_text(key)
-            # 
-            #     # Clear options
-            #     self.break_combo.remove_all()
-            # 
-            #     # Add options
-            #     self.break_combo.append_text(key)
 
         # Show the popover
         self.break_popover.show_all()
@@ -1319,15 +1208,7 @@ class Application():
             None
         """
 
-        # Apply algorithm
-        self.apply_algorithm(
-            self.algorithm,
-            self.alphabet,
-            self.key
-        )
-
-        # Update view
-        self.update_text_views()
+        self.update_view()
 
     def caesar_adjustment_changed(self, adjustment: Gtk.Adjustment) -> None:
         """
@@ -1347,15 +1228,7 @@ class Application():
         if adjustment.get_value() > adjustment.get_upper():
             adjustment.set_value(adjustment.get_upper())
 
-        # Apply algorithm
-        self.apply_algorithm(
-            self.algorithm,
-            self.alphabet,
-            self.key
-        )
-
-        # Update view
-        self.update_text_views()
+        self.update_view()
 
     def enigma_adjustment_changed(self, rotor: int) -> None:
         """
@@ -1376,15 +1249,7 @@ class Application():
             if adjustment.get_value() > adjustment.get_upper():
                 adjustment.set_value(adjustment.get_upper())
 
-        # Apply algorithm
-        self.apply_algorithm(
-            self.algorithm,
-            self.alphabet,
-            self.key
-        )
-
-        # Update view
-        self.update_text_views()
+        self.update_view()
 
     def key_popover_button_clicked(self, button):
         """
@@ -1410,8 +1275,81 @@ class Application():
         # Show the popover
         self.key_popover.show_all()
 
+    def check_readable(self, text: str) -> str:
+        """
+        Checks if the text is readable.
+
+        Args:
+            text (str): The text.
+
+        Returns:
+            str: The text if it is readable, otherwise an error message.
+        """
+
+        # Check if there are non-readable characters
+        if any(
+            c not in string.printable or c in UNREADABLE_TABLE
+            for c in text
+        ):
+            return 'Non-readable characters\nLook at the hex view'
+        
+        # Return the text
+        return text
+        
+    # Clipboard
+    def copy_dec(self, button: Gtk.Button) -> None:
+        """
+        Callback for the copy decrypted button.
+
+        Args:
+            button (Gtk.Button): The button.
+
+        Returns:
+            None
+        """
+
+        self.copy(self.decrypted_text_buffer)
+
+    def copy_enc(self, button: Gtk.Button) -> None:
+        """
+        Callback for the copy encrypted button.
+
+        Args:
+            button (Gtk.Button): The button.
+
+        Returns:
+            None
+        """
+
+        self.copy(self.encrypted_text_buffer)
+
+    def copy(self, buffer: Gtk.TextBuffer) -> None:
+        """
+        Copies the text from the buffer to the clipboard.
+
+        Args:
+            buffer (Gtk.TextBuffer): The buffer.
+
+        Returns:
+            None
+        """
+
+        # Get the clipboard
+        clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+
+        # Get the text
+        text = buffer.get_text(
+            buffer.get_start_iter(),
+            buffer.get_end_iter(),
+            True
+        )
+
+        # Set the clipboard text
+        clipboard.set_text(text, -1)
+
     def show(self) -> None:
         self.main_window.show_all()
+
 
 def main() -> None:
     # Test if run' from pyinstaller one-file bundle
