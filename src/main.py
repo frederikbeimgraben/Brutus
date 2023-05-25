@@ -160,9 +160,8 @@ class Application():
         # Link the menus to actions
         self.link_file_actions()
         self.link_algorithm_actions()
-        self.link_detect_actions()
         self.link_copy_actions()
-        self.link_key_popover_actions()
+        self.link_popover_actions()
 
         # Load input data
         self.update_input(enc=False)
@@ -632,19 +631,6 @@ class Application():
         # Hide the dialog
         dialog.hide()
 
-    def link_detect_actions(self) -> None:
-        """
-        Links the detect actions to the callbacks.
-
-        Returns:
-            None
-        """
-
-        # Alphabet
-        self.alphabet_detect_button.connect('clicked', self.detect_alphabet)
-        # Key
-        # self.key_detect_button.connect('clicked', self.detect_key)
-
     def link_copy_actions(self) -> None:
         """
         Links the copy actions to the callbacks.
@@ -1020,7 +1006,7 @@ class Application():
         self.key_popover = self.builder.get_object('key_popover')
         ### Detect Buttons (key and alphabet)
         # self.key_detect_button = self.builder.get_object('key_detect_button')
-        self.alphabet_detect_button = self.builder.get_object('alphabet_detect_button')
+        # self.alphabet_detect_button = self.builder.get_object('alphabet_detect_button')
         ### Direction Switch
         self.direction_switch = self.builder.get_object('direction_switch')
         ### Custom alphabet entry
@@ -1034,7 +1020,6 @@ class Application():
             self.key_buffer,
             self.key_popover_button,
             self.key_popover,
-            self.alphabet_detect_button,
             self.direction_switch
         ], 'Failed to get the controls'
 
@@ -1120,7 +1105,17 @@ class Application():
             self.vigenere_key_pane
         ], 'Failed to get the adjustments'
 
-    def link_key_popover_actions(self) -> None:
+        # Alphabet popover
+        self.alphabet_popover = self.builder.get_object('alphabet_popover')
+        ## Button
+        self.alphabet_popover_button = self.builder.get_object('alphabet_popover_button')
+
+        assert None not in [
+            self.alphabet_popover,
+            self.alphabet_popover_button
+        ], 'Failed to get the alphabet popover'
+
+    def link_popover_actions(self) -> None:
         # Clicking the popover button opens the popover
         self.key_popover_button.connect('clicked', self.key_popover_button_clicked)
 
@@ -1134,6 +1129,26 @@ class Application():
         self.enigma_a.connect('value-changed', lambda _: self.enigma_adjustment_changed(0))
         self.enigma_b.connect('value-changed', lambda _: self.enigma_adjustment_changed(1))
         self.enigma_c.connect('value-changed', lambda _: self.enigma_adjustment_changed(2))
+
+        # Alphabet popover
+        self.alphabet_popover_button.connect('clicked', self.alphabet_popover_button_clicked)
+
+    def alphabet_popover_button_clicked(self, *_) -> None:
+        """
+        Callback for the alphabet popover button.
+
+        Args:
+            _: The button.
+
+        Returns:
+            None
+        """
+
+        # Show the popover
+        self.alphabet_popover.show_all()
+
+        # Set active alphabet to custom
+        self.alphabet_combo.set_active(6)
 
     def key_buffer_changed(self, *_) -> None:
         """

@@ -7,6 +7,29 @@
     <property name="step-increment">1</property>
     <property name="page-increment">10</property>
   </object>
+  <object class="GtkPopover" id="alphabet_popover">
+    <property name="can-focus">False</property>
+    <child>
+      <object class="GtkAlignment">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <property name="top-padding">10</property>
+        <property name="bottom-padding">10</property>
+        <property name="left-padding">10</property>
+        <property name="right-padding">10</property>
+        <child>
+          <object class="GtkEntry" id="custom_alphabet_entry">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="activates-default">True</property>
+            <property name="caps-lock-warning">False</property>
+            <property name="primary-icon-stock">gtk-italic</property>
+            <property name="placeholder-text" translatable="yes">abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ</property>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
   <object class="GtkAdjustment" id="caesar_adjustment">
     <property name="upper">256</property>
     <property name="step-increment">1</property>
@@ -691,11 +714,17 @@ Sapien faucibus et molestie ac feugiat. In nulla posuere sollicitudin aliquam ul
                             <property name="left-padding">5</property>
                             <property name="right-padding">5</property>
                             <child>
-                              <object class="GtkButton" id="alphabet_detect_button">
-                                <property name="label" translatable="yes">Detect</property>
+                              <object class="GtkButton" id="alphabet_popover_button">
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="receives-default">True</property>
+                                <child>
+                                  <object class="GtkImage">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                    <property name="stock">gtk-edit</property>
+                                  </object>
+                                </child>
                               </object>
                             </child>
                           </object>
@@ -726,7 +755,7 @@ Sapien faucibus et molestie ac feugiat. In nulla posuere sollicitudin aliquam ul
                         <property name="right-padding">5</property>
                         <child>
                           <object class="GtkButton" id="break_dialog_button">
-                            <property name="label" translatable="yes">Break Key</property>
+                            <property name="label" translatable="yes">Break</property>
                             <property name="visible">True</property>
                             <property name="can-focus">True</property>
                             <property name="receives-default">True</property>
@@ -981,30 +1010,6 @@ Sapien faucibus et molestie ac feugiat. In nulla posuere sollicitudin aliquam ul
             <property name="position">2</property>
           </packing>
         </child>
-        <child>
-          <object class="GtkAlignment">
-            <property name="visible">True</property>
-            <property name="can-focus">False</property>
-            <property name="bottom-padding">10</property>
-            <property name="left-padding">10</property>
-            <property name="right-padding">10</property>
-            <child>
-              <object class="GtkEntry" id="custom_alphabet_entry">
-                <property name="visible">True</property>
-                <property name="can-focus">True</property>
-                <property name="activates-default">True</property>
-                <property name="caps-lock-warning">False</property>
-                <property name="primary-icon-stock">gtk-italic</property>
-                <property name="placeholder-text" translatable="yes">abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ</property>
-              </object>
-            </child>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">3</property>
-          </packing>
-        </child>
       </object>
     </child>
     <child type="titlebar">
@@ -1020,12 +1025,18 @@ Sapien faucibus et molestie ac feugiat. In nulla posuere sollicitudin aliquam ul
             <property name="can-focus">False</property>
             <child>
               <object class="GtkButton" id="open_file_button">
-                <property name="label">gtk-open</property>
                 <property name="related-action">open_file_selector_action</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
-                <property name="use-stock">True</property>
+                <child>
+                  <object class="GtkImage">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="stock">gtk-open</property>
+                    <property name="icon_size">3</property>
+                  </object>
+                </child>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -1035,12 +1046,18 @@ Sapien faucibus et molestie ac feugiat. In nulla posuere sollicitudin aliquam ul
             </child>
             <child>
               <object class="GtkButton" id="save_file_button">
-                <property name="label">gtk-save</property>
                 <property name="related-action">open_file_save_action</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
-                <property name="use-stock">True</property>
+                <child>
+                  <object class="GtkImage">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="stock">gtk-save</property>
+                    <property name="icon_size">3</property>
+                  </object>
+                </child>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -1125,6 +1142,7 @@ Sapien faucibus et molestie ac feugiat. In nulla posuere sollicitudin aliquam ul
                       <object class="GtkEntry" id="vigenere_key_entry">
                         <property name="visible">True</property>
                         <property name="can-focus">True</property>
+                        <property name="buffer">key_buffer</property>
                         <property name="placeholder-text" translatable="yes">Key</property>
                       </object>
                       <packing>
