@@ -14,7 +14,7 @@ Contains:
 from math import log
 import random
 import string
-from typing import Callable, Dict, Generator, Iterable, List, Sized, SupportsIndex, Optional, Tuple
+from typing import Dict, Generator, Iterable, List, Sized, SupportsIndex, Optional, Tuple
 
 # Type Hints  (I just like type hints, okay?)
 S = str | bytes | int
@@ -67,7 +67,7 @@ def hash_sequence(text: T | KS | S, table: A) -> int:
         elif isinstance(text, int):
             return text
         elif isinstance(text, bytes):
-            return table.index(text)
+            return table.index(text) # type: ignore
         else:
             raise TypeError(f"Cannot hash sequence of type {type(text)}")
 
@@ -94,13 +94,13 @@ def shift_symbol(symbol: S, shift: int, table: A) -> S:
         S: The shifted symbol.
     """
 
-    if symbol not in table:
+    if symbol not in table: # type: ignore
         # if isinstance(symbol, str):
         #     symbol = str(symbol.encode("utf-8"))[2:-1]
         # raise ValueError(f"The symbol '{symbol}' is not in the alphabet.")
         return symbol
 
-    index: int = table.index(symbol)
+    index: int = table.index(symbol) # type: ignore
 
     return table[(index + shift) % len(table)]
 
@@ -305,7 +305,7 @@ def vigenere_decrypt_str(text: str, key: str, table: List[str] | str) -> str:
 
     return "".join(
         str(symbol) for symbol in
-        vigenere_decrypt_sequence(text, key, table)
+        vigenere_decrypt_sequence(text, key, table) # type: ignore
     )
 
 def vigenere_monogram_freq(
@@ -329,7 +329,7 @@ def vigenere_monogram_freq(
 
 def vigenere_tetragram_freq(
         text: str,
-        alphabet: str | List[str]) -> Dict[S, float]:
+        alphabet: str | List[str]) -> Dict[S, float]: # type: ignore
     """
     Calculates the tetragram frequency of a text.
 
