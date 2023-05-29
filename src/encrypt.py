@@ -12,10 +12,11 @@ Contains:
 
 # Standard imports
 import copy
+from functools import cache, cached_property
 from math import log
 import random
 import string
-from typing import Dict, Generator, Iterable, List, Sized, SupportsIndex, Optional, Tuple, Sized
+from typing import Callable, Dict, Generator, Iterable, List, Sized, SupportsIndex, Optional, Tuple, Sized
 
 # Type Hints  (I just like type hints, okay?)
 S = str | bytes | int
@@ -514,9 +515,11 @@ class EnigmaRotor(Iterable[S]):
         return self
     
     def __hash__(self) -> int:
-        return sum(
-            hash(symbol) * (i + 1)
-            for i, symbol in enumerate(self.mapping_list)
+        return (
+            sum(
+                hash(symbol) * (i + 1)
+                for i, symbol in enumerate(self.mapping_list)
+            ) + self.position
         ) % 2**32
     
 class EnigmaContext(Iterable[S]):
@@ -563,9 +566,10 @@ class EnigmaContext(Iterable[S]):
     def __enter__(self) -> 'EnigmaContext':
         return self
     
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, *_):
         pass
 
+@cache
 def enigma_apply_recursive(
         symbol: S,
         rotors: Tuple[EnigmaRotor] | Tuple[()],
@@ -600,6 +604,28 @@ def enigma_apply_recursive(
         )
     )
 
+def delistify(func: Callable) -> Callable:
+    def wrapper(*args, **kwargs):
+        args = list(args)
+        for i, arg in enumerate(args):
+            if isinstance(arg, list):
+                args[i] = tuple(arg)
+
+        return func(*args, **kwargs)
+
+    return wrapper
+
+def degenify(func: Callable) -> Callable:
+    def wrapper(*args, **kwargs):
+        return tuple(
+            func(*args, **kwargs)
+        )
+
+    return wrapper
+
+@delistify
+@cache
+@degenify
 def enigma_apply_sequence(
         text: T,
         rotors: Tuple[EnigmaRotor, ...],
