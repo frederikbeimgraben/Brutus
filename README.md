@@ -1,5 +1,9 @@
 # Brutus Encryptor
+![BUILD-STATUS](https://github.com/frederikbeimgraben/Brutus/actions/workflows/makefile.yml/badge.svg)
 > Projekt für HS-RT Info 1 (benotet) 
+
+
+
 
 ![Brutus](img/UI_1.png)
 
