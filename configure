@@ -21,3 +21,9 @@ source .venv/bin/activate
 # Install dependencies
 echo "Installing dependencies..."
 pip install -r requirements.txt
+
+# Install pyinstaller if it doesn't exist
+if [ ! -f ".venv/bin/pyinstaller" ]; then
+    echo "Installing pyinstaller..."
+    pip install pyinstaller
+fi
