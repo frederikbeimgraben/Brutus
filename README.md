@@ -1,5 +1,5 @@
 # Brutus Encryptor
-> Projekt für HS-RT Info 1 (benotet)
+> Projekt für HS-RT Info 1 (benotet) 
 
 ![Brutus](img/UI_1.png)
 
