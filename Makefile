@@ -4,7 +4,7 @@
 # Target binary
 TARGET = Brutus
 SHELL = /bin/bash
-PYINSTALLER = pyinstaller
+PYINSTALLER = ./.venv/bin/pyinstaller
 
 # Make rule
 all:
