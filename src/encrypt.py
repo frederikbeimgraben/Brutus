@@ -568,7 +568,7 @@ class EnigmaContext(Iterable[S]):
 
 def enigma_apply_recursive(
         symbol: S,
-        rotors: List[EnigmaRotor],
+        rotors: Tuple[EnigmaRotor] | Tuple[()],
         inverted: bool=False) -> S:
     """
     Applies a set of rotors to a symbol.
@@ -627,8 +627,12 @@ def enigma_apply_sequence(
     
     with EnigmaContext(text, rotors, offsets) as ctx:
         return (
-            enigma_apply_recursive(s, r, inverted=inverted)
-            for s, (*r,) in ctx
+            enigma_apply_recursive(
+                symbol,
+                rotors, 
+                inverted=inverted
+            )
+            for symbol, rotors in ctx
         )
 
 
