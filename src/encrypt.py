@@ -11,10 +11,11 @@ Contains:
 """
 
 # Standard imports
+import copy
 from math import log
 import random
 import string
-from typing import Dict, Generator, Iterable, List, Sized, SupportsIndex, Optional, Tuple
+from typing import Dict, Generator, Iterable, List, Sized, SupportsIndex, Optional, Tuple, Sized
 
 # Type Hints  (I just like type hints, okay?)
 S = str | bytes | int
@@ -517,6 +518,119 @@ class EnigmaRotor(Iterable[S]):
             hash(symbol) * (i + 1)
             for i, symbol in enumerate(self.mapping_list)
         ) % 2**32
+    
+class EnigmaContext(Iterable[S]):
+    __rotors: Tuple['EnigmaRotor']
+    __offsets: Tuple[int]
+    __position: int = 0
+    text: T
+
+    def __init__(
+            self, 
+            text: T,
+            rotors: Iterable['EnigmaRotor'],
+            offsets: Iterable[int]):
+
+        assert (
+            isinstance(rotors, Iterable) and
+            isinstance(offsets, Iterable)
+        ), "rotors and offsets must be iterable"
+
+        self.__rotors = tuple(rotors)
+        self.__offsets = tuple(offsets)
+        self.text = text
+
+    @property
+    def rotors(self) -> Iterable['EnigmaRotor']:
+        return (
+            EnigmaRotor(
+                rotor.alphabet,
+                offset % len(rotor.alphabet),
+                rotor.init_mapping
+            )
+            for rotor, offset in zip(self.__rotors, self.__offsets)
+        )
+    
+    def __iter__(self) -> Generator[Tuple[S, Tuple[EnigmaRotor, ...]], None, None]:
+        return (
+            (s, (*rotors,))
+            for s, *rotors in zip(
+                self.text,
+                *self.rotors
+            )
+        )
+
+    def __enter__(self) -> 'EnigmaContext':
+        return self
+    
+    def __exit__(self, exc_type, exc_value, traceback):
+        pass
+
+def enigma_apply_recursive(
+        symbol: S,
+        rotors: List[EnigmaRotor],
+        inverted: bool=False) -> S:
+    """
+    Applies a set of rotors to a symbol.
+
+    Args:
+        symbol (S): The symbol to apply the rotors to.
+        rotors (Tuple[EnigmaRotor, ...]): The rotors to apply.
+
+    Returns:
+        S: The new symbol.
+    """
+
+    if len(rotors) == 0:
+        return symbol
+    
+    if inverted:
+        return rotors[0][
+            enigma_apply_recursive(
+                symbol,
+                rotors[1:],
+                inverted=True
+            )
+        ]
+
+    return rotors[-1](
+        enigma_apply_recursive(
+            symbol,
+            rotors[:-1]
+        )
+    )
+
+def enigma_apply_sequence(
+        text: T,
+        rotors: Tuple[EnigmaRotor, ...],
+        offsets: Tuple[int, ...],
+        inverted: bool=False) -> Generator[S, None, None]:
+    """
+    Applies an enigma machine to a text.
+
+    Args:
+        text (T): The text to apply the machine to.
+        rotors (Tuple[EnigmaRotor, ...]): The rotors to use.
+        offsets (Tuple[int, ...]): The offsets to use.
+        inverted (bool, optional): Whether to invert the rotors. Defaults to False.
+
+    Raises:
+        ValueError: If the number of rotors and offsets do not match.
+
+    Yields:
+        Generator[S, None, None]: The encrypted text.
+            We use a generator here to allow for lazy evaluation of eg. a stream of characters.
+    """
+
+    if len(rotors) != len(offsets):
+        raise ValueError("The number of rotors and offsets must match.")
+    
+    with EnigmaContext(text, rotors, offsets) as ctx:
+        return (
+            enigma_apply_recursive(s, r, inverted=inverted)
+            for s, (*r,) in ctx
+        )
+
 
 def enigma_encrypt_sequence(
         text: T,
@@ -535,35 +649,7 @@ def enigma_encrypt_sequence(
             We use a generator here to allow for lazy evaluation of eg. a stream of characters.
     """
 
-    rotor_a, rotor_b, rotor_c = rotors
-
-    # Copy the rotors
-    rotor_a, rotor_b, rotor_c = (
-        EnigmaRotor(
-            alphabet=rotor.alphabet,
-            position=offset,
-            mapping=rotor.init_mapping
-        ) for rotor, offset in zip(
-            (rotor_a, rotor_b, rotor_c),
-            offsets
-        )
-    )
-
-    return (
-        rotor_c(
-            rotor_b(
-                rotor_a(
-                    symbol
-                )
-            )
-        )
-        for symbol, *_ in zip(
-            text, 
-            rotor_a, 
-            rotor_b, 
-            rotor_c
-        )
-    )
+    return enigma_apply_sequence(text, rotors, offsets)
 
 def enigma_decrypt_sequence(
         text: T,
@@ -584,35 +670,7 @@ def enigma_decrypt_sequence(
         ValueError: If the text contains a symbol not in the alphabet.
     """
 
-    rotor_a, rotor_b, rotor_c = rotors
-
-    # Copy the rotors
-    rotor_a, rotor_b, rotor_c = (
-        EnigmaRotor(
-            alphabet=rotor.alphabet,
-            position=offset,
-            mapping=rotor.init_mapping
-        ) for rotor, offset in zip(
-            (rotor_a, rotor_b, rotor_c),
-            offsets
-        )
-    )
-
-    return (
-        rotor_a[
-            rotor_b[
-                rotor_c[
-                    symbol
-                ]
-            ]
-        ]
-        for symbol, *_ in zip(
-            text,
-            rotor_a,
-            rotor_b,
-            rotor_c
-        )
-    )
+    return enigma_apply_sequence(text, rotors, offsets, inverted=True)
 
 DEFAULT_alphabet = string.ascii_letters + string.digits + string.punctuation + ' '
 BYTE_alphabet = tuple(i for i in range(256))
@@ -620,12 +678,12 @@ BYTE_alphabet = tuple(i for i in range(256))
 pseudo_random = random.Random(0)
 
 # Pseudo randomize 5 alphabets
-alphabetS = tuple(
+ALPHABETS = tuple(
     ''.join(pseudo_random.sample(DEFAULT_alphabet, len(DEFAULT_alphabet)))
     for _ in range(5)
 )
 
-BYTE_alphabetS = tuple(
+BYTE_ALPHABETS = tuple(
     tuple(pseudo_random.sample(BYTE_alphabet, len(BYTE_alphabet)))
     for _ in range(5)
 )
@@ -637,7 +695,7 @@ ROTORS = tuple(
         position=pseudo_random.randint(0, len(alphabet) - 1),
         mapping=list(alphabet)
     )
-    for alphabet in alphabetS
+    for alphabet in ALPHABETS
 )
 
 BYTE_ROTORS = tuple(
@@ -646,7 +704,7 @@ BYTE_ROTORS = tuple(
         position=pseudo_random.randint(0, len(alphabet) - 1),
         mapping=list(alphabet)
     )
-    for alphabet in BYTE_alphabetS
+    for alphabet in BYTE_ALPHABETS
 )
 
 REPLACEMENTS = {
