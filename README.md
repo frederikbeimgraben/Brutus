@@ -73,10 +73,11 @@ sudo make install
 - [ ] Algorthmen / Algorithms
   - [x] Caesar Chiffre / Caesar Cipher
   - [x] Vigenère Chiffre / Vigenère Cipher
-  - [ ] Enigma Chiffre / Enigma Cipher
+  - [x] Enigma Chiffre / Enigma Cipher
   - [ ] AES Chiffre / AES Cipher
 - [ ] UI
   - [x] Basis UI / Basic UI
+  - [x] Better Key Input
   - [ ] Live-Visualisierung / Live Visualization
   - [ ] Übersetzungen / Translations
 - [ ] Allgemein
