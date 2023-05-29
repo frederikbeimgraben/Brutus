@@ -291,12 +291,13 @@ class Application():
 
         if alphabet is None:
             # Get custom alphabet
-            alphabet = self.custom_alphabet_entry.get_text()
-            alphabet = [ord(c) for c in alphabet]
+            return [
+                ord(c) 
+                for c in 
+                self.custom_alphabet_entry.get_text()
+            ]
         else:
-            alphabet = alphabet.copy()
-        
-        return alphabet
+            return alphabet.copy()
     
     @property
     def algorithm(self) -> str:
