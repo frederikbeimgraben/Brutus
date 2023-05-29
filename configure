@@ -1,0 +1,23 @@
+#!/bin/bash
+echo "Configuring..."
+rm -rf build
+rm -rf dist
+
+# Assert we are on linux
+if [[ "$OSTYPE" != "linux-gnu"* ]]; then
+    echo "This script is only for linux"
+    exit 1
+fi
+
+# Create a pyvenv in the current directory if it doesn't exist
+if [ ! -d ".venv" ]; then
+    echo "Creating pyvenv..."
+    python3 -m venv .venv
+fi
+
+# Activate the pyvenv
+source .venv/bin/activate
+
+# Install dependencies
+echo "Installing dependencies..."
+pip install -r requirements.txt

@@ -1,3 +1,1 @@
 PyGObject
-typing
-functools

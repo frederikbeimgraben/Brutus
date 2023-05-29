@@ -12,7 +12,7 @@ Contains:
 
 # Standard imports
 import copy
-from functools import cache, cached_property
+from functools import cache
 from math import log
 import random
 import string

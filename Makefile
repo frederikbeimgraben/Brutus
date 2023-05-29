@@ -8,7 +8,7 @@ PYINSTALLER = pyinstaller
 
 # Make rule
 all:
-	rm -rf build dist
+	source .venv/bin/activate
 	$(PYINSTALLER) build.spec
 	cp ui/$(TARGET).* dist/
 
