@@ -1,9 +1,15 @@
 # Brutus Encryptor
-<a href=https://github.com/frederikbeimgraben/Brutus/actions/workflows/makefile.yml>
 
-![BUILD-STATUS](https://github.com/frederikbeimgraben/Brutus/actions/workflows/makefile.yml/badge.svg)
+<p float="left">
+  <a href="https://github.com/frederikbeimgraben/Brutus/actions/workflows/makefile.yml">
+    <img src="https://github.com/frederikbeimgraben/Brutus/actions/workflows/makefile.yml/badge.svg"/>
+  </a>
+  <a href="https://github.com/frederikbeimgraben/Brutus/actions/workflows/pylint.yml">
+    <img src="https://github.com/frederikbeimgraben/Brutus/actions/workflows/pylint.yml/badge.svg"/>
+  </a>
+</p>
 
-</a>
+
 > Projekt für HS-RT Info 1 (benotet) 
 
 
