@@ -69,7 +69,8 @@ This program is written for Linus mainly, but should work on Windows and Mac as 
 ### Zum Ausführen des Programms / To run the program:
 ```sh
 git clone https://github.com/frederikbeimgraben/Brutus
-cd Info1-Projekt
+cd Brutus
+
 python src/main.py
 ```
 
@@ -79,15 +80,15 @@ This will require you to have PyGObject installed.
 ### Zur Installation des Programms / To install the program:
 ```sh
 git clone https://github.com/frederikbeimgraben/Brutus
-cd Info1-Projekt
+cd Brutus
 
+./configure
 make
 sudo make install
 ```
 
 ## Andere enthaltene Dateien / Other included files:
-- `src/encrypt_file.py` - Encrypts a file with the given cipher. \
-  For usage run `python src/encrypt_file.py --help`.
+- [`src/encrypt_file.py`](https://github.com/frederikbeimgraben/Brutus/wiki/Encrypt-File-CLI-Tool) - Encrypts a file with the given cipher.
 
 ## Fortschritt / Progress
 - [ ] Algorthmen / Algorithms
