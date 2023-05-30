@@ -26,7 +26,6 @@ from typing import Any, Callable, List, Tuple, Iterable, Optional
 import multiprocessing
 import time
 import dill
-import urllib3
 
 
 def __run(
@@ -50,6 +49,7 @@ def __run(
         result = function(*args, **kwargs)
         end = time.time()
         queue.put((worker_id, end - start, result,))
+    # pylint: disable=broad-except
     except Exception as exc:
         end = time.time()
         queue.put((worker_id, end - start, exc,))
@@ -71,13 +71,11 @@ def async_map(
     This way it can handle continuous streams of data at a higher performance.
     """
 
-    
-
     def wrapper(function: Callable) -> Callable:
         """
         The Function Wrapper
         """
-        
+
         def eval_result(
             workers: List[Tuple[int, multiprocessing.Process]],
             queue: multiprocessing.Queue) -> Any:
@@ -95,7 +93,7 @@ def async_map(
                 if ordered: # Pick the next worker in order
                     worker_id, worker = workers.pop(0)
                     worker.join(timeout=timeout)
-                    
+
                     elem = queue.get()
                     while not found:
                         if elem[0] == worker_id:
@@ -104,7 +102,7 @@ def async_map(
                             # Cycle through the results
                             queue.put(elem)
                             elem = queue.get()
-                
+
                 else: # Pick any worker, that is finished
                     start = time.time()
                     while not found and time.time() - start < timeout:
@@ -114,7 +112,7 @@ def async_map(
                                 workers.remove((worker_id, worker,))
                                 elem = queue.get()
                                 raise StopIteration()
-                    
+
                     # If it timed out, stop a worker.
                     worker_id, worker = workers.pop(0)
                     worker.join(timeout=0)
@@ -163,7 +161,7 @@ def async_map(
                     raise TypeError(
                         'The input stream must implement the `__next__` or `__iter__` method'
                     )
-                
+
             # Pickle the function
             _function = dill.dumps(function)
 
@@ -177,14 +175,13 @@ def async_map(
             queue = multiprocessing.Queue()
 
             # Equivalent to a Pool
-            # FIXME: Will be reworked to reuse workers in the future
             while True:
                 try:
                     while True:
                         # Get the next arguments
                         # Will raise StopIteration if the stream is empty
                         # This will be caught by the outer try-except
-                        # If we would use a for loop, it would catch the exception 
+                        # If we would use a for loop, it would catch the exception
                         # which we don't want
                         args = next(input_stream) # type: ignore
 
@@ -213,7 +210,7 @@ def async_map(
                                 workers,
                                 queue
                             )
-                
+
                 # If the stream is empty, handle like:
                 except StopIteration:
                     # If `wait` is not set, break

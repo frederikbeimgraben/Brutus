@@ -27,7 +27,7 @@ Options:
 """
 
 # Standard imports
-from typing import Iterable, Callable
+from typing import Iterable, Callable, Generator
 import argparse
 
 # Local imports
@@ -42,7 +42,7 @@ BYTE_ALPHABET = [
 def apply_byte_stream(
         func: Callable,
         key: Iterable[int],
-        byte_stream: Iterable[bytes]) -> Iterable[bytes]:
+        byte_stream: Iterable[bytes] | bytes) -> Generator[bytes, None, None]:
     """
     Encrypts a byte stream using the given function and key.
     """
@@ -57,7 +57,7 @@ def apply_byte_stream(
     )
 
 def apply_file(
-        func: callable,
+        func: Callable,
         key: Iterable[int],
         input_path: str,
         output_path: str) -> None:
@@ -73,7 +73,7 @@ def apply_file(
                         func,
                         key,
                         input_file.read()
-                    )
+                    ) # type: ignore
                 )
             )
 
@@ -125,22 +125,23 @@ args.add_argument(
 
 if __name__ == '__main__':
     # Parse the arguments
-    args = args.parse_args()
+    ARGS = args.parse_args()
 
     # Get the key
-    key = [ord(char) for char in args.key]
+    KEY = [ord(char) for char in ARGS.key]
 
     # Get the function
-    func = None
-    if args.function == 'caesar':
-        func = caesar_decrypt_sequence if args.decrypt else caesar_encrypt_sequence
-    elif args.function == 'vigenere':
-        func = vigenere_decrypt_sequence if args.decrypt else vigenere_encrypt_sequence
+    if ARGS.function == 'caesar':
+        FUNC = caesar_decrypt_sequence if ARGS.decrypt else caesar_encrypt_sequence
+    elif ARGS.function == 'vigenere':
+        FUNC = vigenere_decrypt_sequence if ARGS.decrypt else vigenere_encrypt_sequence
+    else:
+        raise ValueError('Invalid function.')
 
     # Encrypt the file
     apply_file(
-        func,
-        key,
-        args.input,
-        args.output
+        FUNC,
+        KEY,
+        ARGS.input,
+        ARGS.output
     )

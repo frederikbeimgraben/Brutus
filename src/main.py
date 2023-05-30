@@ -4,6 +4,7 @@ Graphical User Interface for the application using gi.repository: Gtk+
 
 Use the `ui/main_window.ui` as the UI source file.
 """
+# pylint: disable=too-many-lines
 
 # Standard library imports
 import os
@@ -11,28 +12,29 @@ import random
 import string
 from typing import Any, Generator, List, Optional, Dict, Tuple
 import subprocess
+import sys
 
 # Get python path site-packages
-command = 'python3 -c "import site; print(site.getsitepackages()[0])"'
-site_packages = subprocess.check_output(command, shell=True).decode('utf-8').strip()
+COMMAND_SP = 'python3 -c "import site; print(site.getsitepackages()[0])"'
+SITE_PACKAGES = subprocess.check_output(COMMAND_SP, shell=True).decode('utf-8').strip()
 
-print(f'Using site-packages: {site_packages}')
+print(f'Using site-packages: {SITE_PACKAGES}')
 
 # ls the site-packages directory
-command = f'ls {site_packages}'
-site_packages_ls = subprocess.check_output(command, shell=True).decode('utf-8').strip()
+COMMAND_LS = f'ls {SITE_PACKAGES}'
+SITE_PACKAGES_LS = subprocess.check_output(COMMAND_LS, shell=True).decode('utf-8').strip()
 
 # Check if gi is installed
-if 'gi' not in site_packages_ls:
+if 'gi' not in SITE_PACKAGES_LS:
     raise ImportError('gi.repository is not installed')
 
 # Load gi, set the version (3.0) and import Gtk
-import sys
-sys.path.append(site_packages)
+sys.path.append(SITE_PACKAGES)
 
+# pylint: disable=wrong-import-position
 import gi # type: ignore
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, GObject # type: ignore
+from gi.repository import Gtk, Gdk # type: ignore
 from gi.repository import GdkPixbuf # type: ignore
 
 # Local imports
@@ -154,7 +156,6 @@ OBJECTS: Dict[str, Dict] = {
                         'enigma_a' : ('GtkSpinButton', 'enigma_a'),
                         'enigma_b' : ('GtkSpinButton', 'enigma_b'),
                         'enigma_c' : ('GtkSpinButton', 'enigma_c'),
-                        # TODO: Plugboard
                     }
                 },
                 'key_stack' : ('GtkStack', 'key_stack'),
@@ -205,11 +206,15 @@ OBJECTS: Dict[str, Dict] = {
 # GUI
 ## Main window
 class Application():
+    """
+    Main application class
+    """
+
     builder: Gtk.Builder
     main_window: Any
 
     # Text views
-    text_dec: str 
+    text_dec: str
     text_enc: str
     data_dec: bytes
     data_enc: bytes
@@ -282,6 +287,10 @@ class Application():
     # Alphabet
     @property
     def alphabet(self) -> List[int]:
+        """
+        Get alphabet
+        """
+
         alphabet_id = self.alphabet_combo.get_active_id()
         alphabet = ALPHABETS[alphabet_id]
 
@@ -292,22 +301,30 @@ class Application():
         if alphabet is None:
             # Get custom alphabet
             return [
-                ord(c) 
-                for c in 
+                ord(c)
+                for c in
                 self.custom_alphabet_entry.get_text()
             ]
         else:
             return alphabet.copy()
-    
+
     @property
     def algorithm(self) -> str:
+        """
+        Get algorithm
+        """
+
         algorithm_id = self.algorithm_combo.get_active_id()
         algorithm = ALGORITHMS[algorithm_id]
 
         return algorithm
-    
+
     @property
     def key(self) -> str | int | Tuple[Tuple[int, ...], Tuple[EnigmaRotor, ...]]:
+        """
+        Get key
+        """
+
         if self.algorithm == 'vigenere':
             return self.key_buffer.get_text()
         elif self.algorithm == 'caesar':
@@ -335,9 +352,13 @@ class Application():
             )
         else:
             raise ValueError('Unknown algorithm')
-    
+
     @property
     def dec(self) -> bool:
+        """
+        Get decryption flag
+        """
+
         return self.direction_switch.get_active()
 
     def __init__(self, file: str, main_obj: str='main_window') -> None:
@@ -346,12 +367,13 @@ class Application():
 
         Args:
             file (str): The path to the UI file.
-            main_obj (str, optional): The ID of the main window object in the UI file. Defaults to 'main_window'.
+            main_obj (str, optional): The ID of the main window object in the UI file. 
+                                      Defaults to 'main_window'.
 
         Returns:
             None
         """
-        
+
         # Create the builder and load the UI file
         self.builder = Gtk.Builder()
 
@@ -382,7 +404,7 @@ class Application():
 
     def get_objects(
             self,
-            objects: Dict | Tuple=OBJECTS,
+            objects: Dict | Tuple | None=None,
             path: List[str] | None=None,
             registered: List[Tuple] | None=None) -> List[Tuple]:
         """
@@ -392,12 +414,15 @@ class Application():
             None
         """
 
+        if objects is None:
+            objects = OBJECTS
+
         if path is None:
             path = []
 
         if registered is None:
             registered = []
-        
+
         builder = self.builder
 
         ind = '\x1B[35m|\t' * (len(path) - 1)
@@ -441,8 +466,12 @@ class Application():
         self.link_file_actions()
         self.link_misc()
         self.link_control_actions()
-    
+
     def link_control_actions(self) -> None:
+        """
+        Links all the actions to their respective functions.
+        """
+
         # Clicking the popover button opens the popover
         self.key_popover_button.connect('clicked', self.key_popover_button_clicked)
 
@@ -480,7 +509,7 @@ class Application():
         self.encrypted_text_buffer.connect('end_user_action', self.update_text)
 
         # Direction
-        self.direction_switch.connect('state-set', self.update_direction)   
+        self.direction_switch.connect('state-set', self.update_direction)
 
     def link_file_actions(self) -> None:
         """
@@ -494,15 +523,27 @@ class Application():
         self.open_file_dialog.connect('response', self.open_file_dialog_response)
         self.open_file_button.connect('clicked', lambda _: self.open_file_dialog.show())
         ## Buttons
-        self.open_ok_button.connect('clicked', lambda _: self.open_file_dialog_response(self.open_file_dialog, Gtk.ResponseType.OK))
-        self.open_close_button.connect('clicked', lambda _: self.open_file_dialog_response(self.open_file_dialog, Gtk.ResponseType.CANCEL))
+        self.open_ok_button.connect(
+            'clicked', 
+            lambda _: self.open_file_dialog_response(self.open_file_dialog, Gtk.ResponseType.OK)
+        )
+        self.open_close_button.connect(
+            'clicked', 
+            lambda _: self.open_file_dialog_response(self.open_file_dialog, Gtk.ResponseType.CANCEL)
+        )
 
         # Save File
         self.save_file_dialog.connect('response', self.save_file_dialog_response)
         self.save_file_button.connect('clicked', lambda _: self.save_file_dialog.show())
         ## Buttons
-        self.save_ok_button.connect('clicked', lambda _: self.save_file_dialog_response(self.save_file_dialog, Gtk.ResponseType.OK))
-        self.save_close_button.connect('clicked', lambda _: self.save_file_dialog_response(self.save_file_dialog, Gtk.ResponseType.CANCEL))
+        self.save_ok_button.connect(
+            'clicked', 
+            lambda _: self.save_file_dialog_response(self.save_file_dialog, Gtk.ResponseType.OK)
+        )
+        self.save_close_button.connect(
+            'clicked', 
+            lambda _: self.save_file_dialog_response(self.save_file_dialog, Gtk.ResponseType.CANCEL)
+        )
 
     def link_misc(self) -> None:
         """
@@ -543,26 +584,25 @@ class Application():
         # Apply algorithm
         self.apply_algorithm(self.algorithm, self.alphabet, self.key) # type: ignore
 
-        [
-            self.update_text_view(enc, hex)
-            for enc in [True, False]
-            for hex in [True, False]
-        ]
+        for is_enc in [True, False]:
+            for is_hex in [True, False]:
+                self.update_text_view(is_enc, is_hex)
 
-    def update_text_view(self, enc: bool=True, hex: bool=True) -> None:
+    def update_text_view(self, is_enc: bool=True, is_hex: bool=True) -> None:
         """
         Updates the view of a single text view.
 
         Args:
-            enc (bool, optional): Whether to update the encrypted or decrypted view. Defaults to True.
+            enc (bool, optional): Whether to update the encrypted or decrypted view. 
+                                  Defaults to True.
             hex (bool, optional): Whether to update the hex or text view. Defaults to True.
 
         Returns:
             None
         """
 
-        if enc:
-            if hex:
+        if is_enc:
+            if is_hex:
                 self.encrypted_hex_buffer.set_text(
                     self.hex_enc
                 )
@@ -571,7 +611,7 @@ class Application():
                     self.check_readable(self.text_enc)
                 )
         else:
-            if hex:
+            if is_hex:
                 self.decrypted_hex_buffer.set_text(
                     self.hex_dec
                 )
@@ -585,7 +625,8 @@ class Application():
         Updates the input data. (pulls from the text views).
 
         Args:
-            enc (bool, optional): Whether to update the encrypted or decrypted view. Defaults to True.
+            enc (bool, optional): Whether to update the encrypted or decrypted view. 
+                                  Defaults to True.
 
         Returns:
             None
@@ -597,7 +638,7 @@ class Application():
         if enc:
             self.text_enc = self.get_enc_buffer()
             self.data_enc = self.text_enc.encode()
-            hex_enc = ' '.join(
+            self.hex_enc = ' '.join(
                 [f'{b:02X}' for b in self.data_enc]
             )
         else:
@@ -622,24 +663,24 @@ class Application():
 
         print(f'Loading file {file_path}...', end='', flush=True)
 
-        with open(file_path, 'rb') as f:
-            data: bytes = f.read()
+        with open(file_path, 'rb') as file:
+            data: bytes = file.read()
 
         text: str = ''.join(
             chr(b) for b in data
         )
-        hex: str = ' '.join(
+        hex_data: str = ' '.join(
             [f'{b:02X}' for b in data]
         )
 
         if enc:
             self.text_enc = text
             self.data_enc = data
-            self.hex_enc = hex
+            self.hex_enc = hex_data
         else:
             self.text_dec = text
             self.data_dec = data
-            self.hex_dec = hex
+            self.hex_dec = hex_data
 
         print('\t\x1B[32;1mDone\x1B[0m')
 
@@ -662,11 +703,11 @@ class Application():
         else:
             data: bytes = self.data_dec
 
-        with open(file_path, 'wb') as f:
-            f.write(data)
+        with open(file_path, 'wb') as file:
+            file.write(data)
 
         print(f'\t\x1B[32;1mSaved to {file_path}\x1B[0m')
-    
+
     def open_file_dialog_response(self, dialog, response_id):
         """
         Callback for the open file dialog.
@@ -691,7 +732,7 @@ class Application():
 
             if file_path is None:
                 return
-            
+
             # If the file is a directory
             if os.path.isdir(file_path):
                 # Switch to the directory
@@ -785,7 +826,7 @@ class Application():
             self.decrypted_text_buffer.get_end_iter(),
             True
         )
-    
+
     def set_dec_buffer(self, value: str) -> None:
         """
         Sets the decrypted text buffer.
@@ -812,7 +853,7 @@ class Application():
             self.encrypted_text_buffer.get_end_iter(),
             True
         )
-    
+
     def set_enc_buffer(self, value: str) -> None:
         """
         Sets the encrypted text buffer.
@@ -828,6 +869,10 @@ class Application():
 
     # Algorithm actions
     def clean_characters(self):
+        """
+        Cleans the characters of the active data.
+        """
+
         reader, setter = (
             self.get_dec_buffer, self.set_dec_buffer
         ) if not self.dec else (
@@ -844,9 +889,9 @@ class Application():
                 pass
 
     def apply_algorithm(
-            self, 
-            algorithm: str, 
-            alphabet: List[int], 
+            self,
+            algorithm: str,
+            alphabet: List[int],
             key: str | int | Tuple[Tuple[int, ...], Tuple[EnigmaRotor, ...]]) -> None:
         """
         Applies an algorithm to the active data.
@@ -876,13 +921,16 @@ class Application():
                 key = chr(alphabet[0])
 
         if algorithm == 'caesar':
-            assert type(key) == str or type(key) == int
+            assert (
+                isinstance(key, str) or
+                isinstance(key, int)
+            ), f'Key must be str or int, not {type(key)}'
 
             try:
                 int(key)
             except ValueError:
                 return
-            
+
             if self.dec:
                 data = bytes(
                     b for b in
@@ -894,7 +942,9 @@ class Application():
                     caesar_encrypt_sequence(used_data, int(key), alphabet) # type: ignore
                 )
         elif algorithm == 'vigenere':
-            assert type(key) == str
+            assert (
+                isinstance(key, str)
+            ), f'Key must be str, not {type(key)}'
 
             key_vig: List[int] = [
                 alphabet.index(ord(c)) if ord(c) in alphabet else 0
@@ -912,7 +962,9 @@ class Application():
                     vigenere_encrypt_sequence(used_data, key_vig, alphabet) # type: ignore
                 )
         elif algorithm == 'enigma':
-            assert type(key) == tuple
+            assert (
+                isinstance(key, tuple)
+            ), f'Key must be tuple, not {type(key)}'
 
             # Read out rotor positions
             offsets, rotors = key
@@ -942,21 +994,21 @@ class Application():
             chr(b) for b in data
         )
         data: bytes = data
-        hex: str = ' '.join(
+        hex_data: str = ' '.join(
             [f'{b:02X}' for b in data]
         )
 
         if self.dec:
             self.text_dec = text
             self.data_dec = data
-            self.hex_dec = hex
+            self.hex_dec = hex_data
         else:
             self.text_enc = text
             self.data_enc = data
-            self.hex_enc = hex
+            self.hex_enc = hex_data
 
     # Response callbacks
-    def key_popover_response(self, dialog, response_id):
+    def key_popover_response(self, dialog, _):
         """
         Callback for the key dialog.
 
@@ -971,7 +1023,7 @@ class Application():
         # Hide the dialog
         dialog.hide()
 
-    def clear_dec(self, button: Gtk.Button) -> None:
+    def clear_dec(self, _: Gtk.Button) -> None:
         """
         Callback for the clear decrypted button.
 
@@ -993,7 +1045,7 @@ class Application():
         # Update the other text views
         self.update_view()
 
-    def update_direction(self, switch: Gtk.Switch, state: bool) -> None:
+    def update_direction(self, *_) -> None:
         """
         Callback for the direction switch.
 
@@ -1059,7 +1111,7 @@ class Application():
             target.set_cursor_visible(True)
             self.non_readable = False
 
-    def update_algorithm(self, combo: Gtk.ComboBox) -> None:
+    def update_algorithm(self, _: Gtk.ComboBox) -> None:
         """
         Callback for the algorithm combo box.
 
@@ -1074,7 +1126,7 @@ class Application():
 
         self.update_view()
 
-    def update_alphabet(self, combo: Gtk.ComboBox) -> None:
+    def update_alphabet(self, _: Gtk.ComboBox) -> None:
         """
         Callback for the alphabet combo box.
 
@@ -1087,12 +1139,9 @@ class Application():
 
         self.keys = None
 
-        # Get the alphabet
-        alphabet: List[int] = self.alphabet
-
         self.update_view()
 
-    def update_key(self, entry: Gtk.Entry) -> None:
+    def update_key(self, _: Gtk.Entry) -> None:
         """
         Callback for the key entry.
 
@@ -1104,13 +1153,10 @@ class Application():
         """
 
         self.keys = None
-        
-        # Get the key
-        key: str = entry.get_text()
 
         self.update_view()
 
-    def update_text(self, buffer: Gtk.TextBuffer) -> None:
+    def update_text(self, _: Gtk.TextBuffer) -> None:
         """
         Callback for the text buffer.
 
@@ -1129,7 +1175,7 @@ class Application():
         self.update_input(self.dec)
 
         self.update_view()
-    
+
     def break_combo_changed(self, combo: Gtk.ComboBoxText) -> None:
         """
         Callback for the break combo.
@@ -1232,7 +1278,7 @@ class Application():
 
         self.update_view()
 
-    def enigma_adjustment_changed(self, rotor: int) -> None:
+    def enigma_adjustment_changed(self, _: int) -> None:
         """
         Callback for the Enigma adjustment.
 
@@ -1253,7 +1299,7 @@ class Application():
 
         self.update_view()
 
-    def key_popover_button_clicked(self, button):
+    def key_popover_button_clicked(self, _):
         """
         Callback for the key popover button.
 
@@ -1294,12 +1340,12 @@ class Application():
             for c in text
         ):
             return 'Non-readable characters\nLook at the hex view'
-        
+
         # Return the text
         return text
-        
+
     # Clipboard
-    def copy_dec(self, button: Gtk.Button) -> None:
+    def copy_dec(self, _: Gtk.Button) -> None:
         """
         Callback for the copy decrypted button.
 
@@ -1312,7 +1358,7 @@ class Application():
 
         self.copy(self.decrypted_text_buffer)
 
-    def copy_enc(self, button: Gtk.Button) -> None:
+    def copy_enc(self, _: Gtk.Button) -> None:
         """
         Callback for the copy encrypted button.
 
@@ -1350,13 +1396,25 @@ class Application():
         clipboard.set_text(text, -1)
 
     def show(self) -> None:
+        """
+        Shows the UI.
+
+        Returns:
+            None
+        """
+
         self.main_window.show_all()
 
 
 def main() -> None:
+    """
+    The main function.
+    """
+
     # Test if run' from pyinstaller one-file bundle
     if getattr(sys, 'frozen', False):
         # Change working directory to the bundle resource path
+        # pylint: disable=protected-access
         os.chdir(sys._MEIPASS) # type: ignore
     else:
         # Get file directory

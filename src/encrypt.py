@@ -11,22 +11,25 @@ Contains:
 """
 
 # Standard imports
-import copy
 from functools import cache
-from math import log
 import random
 import string
-from typing import Callable, Dict, Generator, Iterable, List, Sized, SupportsIndex, Optional, Tuple, Sized
+from typing import Callable, Dict, Generator, Iterable, List, Sized, SupportsIndex, Optional, Tuple
 
 # Type Hints  (I just like type hints, okay?)
 S = str | bytes | int
 
 A = List[S] | str | Tuple[S]
 
+# pylint: disable=invalid-name
 T = Iterable[S]
 
+# pylint: disable=abstract-method
 class KeyStr(List[S], Sized, SupportsIndex, Iterable[S]):
-    pass
+    """
+    A KeyStr is a string that can be used as a key.
+    It is a list of symbols that can be indexed and iterated over.
+    """
 
 KS = KeyStr | str
 
@@ -49,7 +52,7 @@ def invert_table(table: A) -> Dict[S, int]:
         for key, value in enumerate(table)
     }
 
-## Hashing Algorithm to convert a sequence of symbols to an offset value 
+## Hashing Algorithm to convert a sequence of symbols to an offset value
 ## (For Caesar Shift by Word Key)
 def hash_sequence(text: T | KS | S, table: A) -> int:
     """
@@ -73,7 +76,7 @@ def hash_sequence(text: T | KS | S, table: A) -> int:
         else:
             raise TypeError(f"Cannot hash sequence of type {type(text)}")
 
-    
+
     inverted: Dict[S, int] = invert_table(table)
 
     return sum(
@@ -199,8 +202,7 @@ def vigenere_shift_sequence(
         text: T,
         key: KS,
         reverse: bool=False,
-        table: Optional[A]=None,
-        assert_len=False) -> Generator[S, None, None]:
+        table: Optional[A]=None) -> Generator[S, None, None]:
     """
     Shifts a sequence by a given key.
 
@@ -213,11 +215,10 @@ def vigenere_shift_sequence(
         Generator[S, None, None]: The shifted text.
             We use a generator here to allow for lazy evaluation of eg. a stream of characters.
     """
-    
+
     if table is None:
         raise ValueError("The alphabet must be specified.")
 
-    
     return (
         shift_symbol(
             symbol,
@@ -310,159 +311,12 @@ def vigenere_decrypt_str(text: str, key: str, table: List[str] | str) -> str:
         vigenere_decrypt_sequence(text, key, table) # type: ignore
     )
 
-def vigenere_monogram_freq(
-        text: str,
-        alphabet: str | List[str]) -> Dict[S, float]:
-    """
-    Calculates the monogram frequency of a text.
-
-    Args:
-        text (T): The text to calculate the monogram frequency of.
-        alphabet (A): The alphabet to use.
-
-    Returns:
-        Dict[S, float]: The monogram frequency.
-    """
-
-    return {
-        symbol: text.count(symbol) / len(text)
-        for symbol in alphabet
-    }
-
-def vigenere_tetragram_freq(
-        text: str,
-        alphabet: str | List[str]) -> Dict[S, float]: # type: ignore
-    """
-    Calculates the tetragram frequency of a text.
-
-    Args:
-        text (T): The text to calculate the tetragram frequency of.
-        alphabet (A): The alphabet to use.
-
-    Returns:
-        Dict[S, float]: The tetragram frequency.
-    """
-
-    tetrafrequencies: List[int] = [0] * (len(alphabet)**4)
-    for i in range(len(text) - 3):
-        x: int = (
-            alphabet.index(text[i])*(len(alphabet)**3) +
-            alphabet.index(text[i+1])*(len(alphabet)**2) +
-            alphabet.index(text[i+2])*len(alphabet) +
-            alphabet.index(text[i+3])
-        )
-        tetrafrequencies[x] += 1
-    for i, _ in enumerate(tetrafrequencies):
-        tetrafrequencies[i] = tetrafrequencies[i] / (len(text)-3) # type: ignore
-
-def vigenere_fitness(
-        text: str,
-        alphabet: str | List[str],):
-    
-    result = 0
-
-    tetrafrequencies = vigenere_tetragram_freq(text, alphabet)
-
-    for i in range(len(text)-3):
-        tetragram = text[i:i+4]
-        x = (
-            alphabet.index(tetragram[0])*(len(alphabet)**3) +
-            alphabet.index(tetragram[1])*(len(alphabet)**2) +
-            alphabet.index(tetragram[2])*(len(alphabet)) +
-            alphabet.index(tetragram[3])
-        )
-
-        y = tetrafrequencies[x]
-        if y == 0:
-            result += -15 # some large negative number
-        else:
-            result += log(y)
-    result = result / (len(text) - 3)
-    return result
-
-def index_of_coincidence(
-        text: str,
-        alphabet: str | List[str]) -> float:
-    counts = [0]*len(alphabet)
-    for char in text:
-        counts[alphabet.index(char)] += 1
-    numer = 0
-    total = 0
-    for i, _ in enumerate(alphabet):
-        numer += counts[i]*(counts[i]-1)
-        total += counts[i]
-    return len(alphabet)*numer / (total*(total-1))
-
-def find_period(
-        text: str,
-        alphabet: str | List[str]) -> int:
-    """
-    Finds the period of a text.
-
-    Args:
-        text (str): The text to find the period of.
-        alphabet (str | List[str]): The alphabet to use.
-
-    Returns:
-        int: The period of the text.
-    """
-
-    period: int = 0
-    while True:
-        period += 1
-        slices = ['']*period
-        for i in range(len(text)):
-            slices[i%period] += text[i]
-        sum = 0
-        for i in range(period):
-            sum += index_of_coincidence(
-                slices[i],
-                alphabet
-            )
-        ioc = sum / period
-        if ioc > 1.6:
-            return period
-
-def vigenere_break_vari(
-        text: str,
-        alphabet: str | List[str]) -> Tuple[str, str]:
-    """
-    Breaks a Vigenere Cipher using the Variational Method.
-
-    Args:
-        text (str): The text to break.
-        alphabet (str | List[str]): The alphabet to use.
-
-    Returns:
-        Tuple[str, str]: The key and the decrypted text.
-    """
-
-    period = find_period(text, alphabet)
-
-    key = ['A']*period
-    fit = -99 # some large negative number
-    while fit < -10:
-        print("Trying key: " + "".join(key))
-        K = key[:]
-        x = random.randrange(period)
-        for i, _ in enumerate(alphabet):
-            K[x] = alphabet[i]
-            pt = vigenere_decrypt_str(
-                text,
-                "".join(K),
-                alphabet
-            )
-
-            F = vigenere_fitness(pt, alphabet)
-            if (F > fit):
-                key = K[:]
-                fit = F
-    
-    return ("".join(key), vigenere_decrypt_str(text, "".join(key), alphabet))
-
-
 ### Enigma
 class EnigmaRotor(Iterable[S]):
+    """
+    A rotor for the Enigma machine.
+    """
+
     alphabet: A
     position: int
     init_mapping: List[S]
@@ -474,14 +328,26 @@ class EnigmaRotor(Iterable[S]):
 
     @property
     def mapping_list(self) -> List[S]:
+        """
+        The mapping of the rotor as a list.
+        """
+
         return self.init_mapping[self.position:] + self.init_mapping[:self.position]
-    
+
     @property
     def mapping(self) -> Dict[S, S]:
+        """
+        The mapping of the rotor as a dictionary.
+        """
+
         return dict(zip(self.alphabet, self.mapping_list))
-    
+
     @property
     def reverse_mapping(self) -> Dict[S, S]:
+        """
+        The reverse mapping of the rotor as a dictionary.
+        """
+
         return dict(zip(self.mapping_list, self.alphabet))
 
     def __call__(self, key: S) -> S:
@@ -490,10 +356,10 @@ class EnigmaRotor(Iterable[S]):
         """
 
         if key not in self.mapping:
-           return key
+            return key
 
         return self.mapping[key]
-    
+
     def __getitem__(self, key: S) -> S:
         """
         Decrypts a single symbol.
@@ -509,11 +375,11 @@ class EnigmaRotor(Iterable[S]):
 
     def __iter__(self) -> Iterable[S]:
         return self
-    
+
     def __next__(self) -> 'EnigmaRotor':
         self.position = (self.position + 1) % len(self.alphabet)
         return self
-    
+
     def __hash__(self) -> int:
         return (
             sum(
@@ -521,15 +387,19 @@ class EnigmaRotor(Iterable[S]):
                 for i, symbol in enumerate(self.mapping_list)
             ) + self.position
         ) % 2**32
-    
+
+
 class EnigmaContext(Iterable[S]):
+    """
+    The context of an Enigma machine.
+    """
+
     __rotors: Tuple['EnigmaRotor']
     __offsets: Tuple[int]
-    __position: int = 0
     text: T
 
     def __init__(
-            self, 
+            self,
             text: T,
             rotors: Iterable['EnigmaRotor'],
             offsets: Iterable[int]):
@@ -545,6 +415,10 @@ class EnigmaContext(Iterable[S]):
 
     @property
     def rotors(self) -> Iterable['EnigmaRotor']:
+        """
+        The rotors of the Enigma machine.
+        """
+
         return (
             EnigmaRotor(
                 rotor.alphabet,
@@ -553,7 +427,7 @@ class EnigmaContext(Iterable[S]):
             )
             for rotor, offset in zip(self.__rotors, self.__offsets)
         )
-    
+
     def __iter__(self) -> Generator[Tuple[S, Tuple[EnigmaRotor, ...]], None, None]:
         return (
             (s, (*rotors,))
@@ -565,7 +439,7 @@ class EnigmaContext(Iterable[S]):
 
     def __enter__(self) -> 'EnigmaContext':
         return self
-    
+
     def __exit__(self, *_):
         pass
 
@@ -587,7 +461,7 @@ def enigma_apply_recursive(
 
     if len(rotors) == 0:
         return symbol
-    
+
     if inverted:
         return rotors[0][
             enigma_apply_recursive(
@@ -605,6 +479,10 @@ def enigma_apply_recursive(
     )
 
 def delistify(func: Callable) -> Callable:
+    """
+    A decorator that converts lists to tuples.
+    """
+
     def wrapper(*args, **kwargs):
         args = list(args)
         for i, arg in enumerate(args):
@@ -616,6 +494,10 @@ def delistify(func: Callable) -> Callable:
     return wrapper
 
 def degenify(func: Callable) -> Callable:
+    """
+    A decorator that converts generators to tuples.
+    """
+
     def wrapper(*args, **kwargs):
         return tuple(
             func(*args, **kwargs)
@@ -650,12 +532,12 @@ def enigma_apply_sequence(
 
     if len(rotors) != len(offsets):
         raise ValueError("The number of rotors and offsets must match.")
-    
+
     with EnigmaContext(text, rotors, offsets) as ctx:
         return (
             enigma_apply_recursive(
                 symbol,
-                rotors, 
+                rotors,
                 inverted=inverted
             )
             for symbol, rotors in ctx
