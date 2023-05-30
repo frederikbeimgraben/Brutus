@@ -7,6 +7,12 @@
   <a href="https://github.com/frederikbeimgraben/Brutus/actions/workflows/pylint.yml">
     <img src="https://github.com/frederikbeimgraben/Brutus/actions/workflows/pylint.yml/badge.svg"/>
   </a>
+  <a href="https://github.com/frederikbeimgraben/Brutus/actions/workflows/codeql.yml">
+    <img src="https://github.com/frederikbeimgraben/Brutus/actions/workflows/codeql.yml/badge.svg"/>
+  </a>
+  <a href="https://github.com/frederikbeimgraben/Brutus/actions/workflows/bandit.yml">
+    <img src="https://github.com/frederikbeimgraben/Brutus/actions/workflows/bandit.yml/badge.svg"/>
+  </a>
 </p>
 
 
