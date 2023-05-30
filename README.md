@@ -21,7 +21,7 @@
 
 
 
-![Brutus](img/UI_1.png)
+![Brutus](img/Brutus.png)
 
 ## Aufgabenstellung / Assignment
 > **Historische Chiffren und wie man sie brechen kann** \
