@@ -1,4 +1,4 @@
-# Brutus
+# [Brutus](https://github.com/frederikbeimgraben/Brutus)
 
 <p float="left">
   <a href="https://github.com/frederikbeimgraben/Brutus/actions/workflows/makefile.yml">
