@@ -10,7 +10,7 @@ Use the `ui/main_window.ui` as the UI source file.
 import os
 import random
 import string
-from typing import Any, Generator, List, Optional, Dict, Tuple
+from typing import Any, Generator, Iterable, List, Optional, Dict, Tuple
 import subprocess
 import sys
 
@@ -896,6 +896,73 @@ class Application():
             else:
                 pass
 
+    def __apply_caesar(self, data: Iterable, alphabet: List[int], key: str | int) -> bytes | None:
+        assert (
+            isinstance(key, str) or
+            isinstance(key, int)
+        ), f'Key must be str or int, not {type(key)}'
+
+        if self.dec:
+            return bytes(
+                b for b in
+                caesar_decrypt_sequence(data, int(key), alphabet) # type: ignore
+            )
+        else:
+            return bytes(
+                b for b in
+                caesar_encrypt_sequence(data, int(key), alphabet) # type: ignore
+            )
+
+    def __apply_vigenere(self, data: Iterable, alphabet: List[int], key: str) -> bytes | None:
+        assert (
+            isinstance(key, str)
+        ), f'Key must be str, not {type(key)}'
+
+        key_vig: List[int] = [
+            alphabet.index(ord(c)) if ord(c) in alphabet else 0
+            for c in key
+        ]
+
+        if self.dec:
+            return bytes(
+                b for b in
+                vigenere_decrypt_sequence(data, key_vig, alphabet) # type: ignore
+            )
+        else:
+            return bytes(
+                b for b in
+                vigenere_encrypt_sequence(data, key_vig, alphabet) # type: ignore
+            )
+
+    def __apply_enigma(self,
+                       data: Iterable,
+                       key: Tuple[Tuple[int, ...], Tuple[EnigmaRotor, ...]]) -> bytes | None:
+        assert (
+            isinstance(key, tuple)
+        ), f'Key must be tuple, not {type(key)}'
+
+        # Read out rotor positions
+        offsets, rotors = key
+
+        if self.dec:
+            return bytes(
+                b for b in
+                enigma_decrypt_sequence(
+                    text=data,
+                    rotors=rotors,
+                    offsets=offsets,
+                ) # type: ignore
+            )
+        else:
+            return bytes(
+                b for b in
+                enigma_encrypt_sequence(
+                    text=data,
+                    rotors=rotors,
+                    offsets=offsets,
+                ) # type: ignore
+            )
+
     def apply_algorithm(
             self,
             algorithm: str,
@@ -928,75 +995,22 @@ class Application():
             elif algorithm == 'vigenere':
                 key = chr(alphabet[0])
 
-        if algorithm == 'caesar':
-            assert (
-                isinstance(key, str) or
-                isinstance(key, int)
-            ), f'Key must be str or int, not {type(key)}'
+        try:
+            match algorithm:
+                case 'caesar':
+                    data = self.__apply_caesar(used_data, alphabet, key)
 
-            try:
-                int(key)
-            except ValueError:
-                return
+                case 'vigenere':
+                    data = self.__apply_vigenere(used_data, alphabet, key)
 
-            if self.dec:
-                data = bytes(
-                    b for b in
-                    caesar_decrypt_sequence(used_data, int(key), alphabet) # type: ignore
-                )
-            else:
-                data = bytes(
-                    b for b in
-                    caesar_encrypt_sequence(used_data, int(key), alphabet) # type: ignore
-                )
-        elif algorithm == 'vigenere':
-            assert (
-                isinstance(key, str)
-            ), f'Key must be str, not {type(key)}'
+                case 'enigma':
+                    data = self.__apply_enigma(used_data, key)
 
-            key_vig: List[int] = [
-                alphabet.index(ord(c)) if ord(c) in alphabet else 0
-                for c in key
-            ]
+                case _:
+                    raise NotImplementedError(f'Algorithm {algorithm} not implemented')
 
-            if self.dec:
-                data = bytes(
-                    b for b in
-                    vigenere_decrypt_sequence(used_data, key_vig, alphabet) # type: ignore
-                )
-            else:
-                data = bytes(
-                    b for b in
-                    vigenere_encrypt_sequence(used_data, key_vig, alphabet) # type: ignore
-                )
-        elif algorithm == 'enigma':
-            assert (
-                isinstance(key, tuple)
-            ), f'Key must be tuple, not {type(key)}'
-
-            # Read out rotor positions
-            offsets, rotors = key
-
-            if self.dec:
-                data = bytes(
-                    b for b in
-                    enigma_decrypt_sequence(
-                        text=used_data,
-                        rotors=rotors,
-                        offsets=offsets,
-                    ) # type: ignore
-                )
-            else:
-                data = bytes(
-                    b for b in
-                    enigma_encrypt_sequence(
-                        text=used_data,
-                        rotors=rotors,
-                        offsets=offsets,
-                    ) # type: ignore
-                )
-        else:
-            raise NotImplementedError
+        except AssertionError as exc:
+            raise ValueError from exc
 
         text: str = ''.join(
             chr(b) for b in data
