@@ -36,6 +36,8 @@ import gi # type: ignore
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk # type: ignore
 from gi.repository import GdkPixbuf # type: ignore
+# Pango
+from gi.repository import Pango # type: ignore
 
 # Local imports
 from encrypt import caesar_encrypt_sequence, caesar_decrypt_sequence
@@ -401,6 +403,12 @@ class Application():
 
         # Link close button to quit
         self.main_window.connect('delete-event', Gtk.main_quit)
+        
+        # Set fonts for monospace text views
+        for view in [self.decrypted_hex_view, self.encrypted_hex_view]:
+            view.modify_font(
+                Pango.FontDescription('monospace')
+            )
 
     def get_objects(
             self,
