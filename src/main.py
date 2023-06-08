@@ -403,7 +403,7 @@ class Application():
 
         # Link close button to quit
         self.main_window.connect('delete-event', Gtk.main_quit)
-        
+
         # Set fonts for monospace text views
         for view in [self.decrypted_hex_view, self.encrypted_hex_view]:
             view.modify_font(
